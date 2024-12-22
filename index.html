@@ -1,355 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fasticket - Home</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
 
-		<meta name="description" content="" />
-		<meta name="author" content="" />
+    <!-- Header -->
+    <header class="bg-gray-900 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold"><span class="text-red-600"> Fast</span>icket</h1>
+            <button id="menu-toggle" class="md:hidden block">
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <div id="menu" class="hidden md:flex md:items-center md:w-auto w-full">
+                <nav class="md:flex md:items-center">
+                    <a href="#" class="block px-4 py-2 md:py-0">Home</a>
+                    <a href="events.html" class="block px-4 py-2 md:py-0">Events</a>
+                    <a href="hotels.html" class="block px-4 py-2 md:py-0">Hotels</a>
+                    <a href="contact.html" class="block px-4 py-2 md:py-0">Contact</a>
+                </nav>
+            </div>
+            <script>
+                document.getElementById('menu-toggle').addEventListener('click', function() {
+                    var menu = document.getElementById('menu');
+                    menu.classList.toggle('hidden');
+                });
+            </script>
+        </div>
+    </header>
 
-		<title>Fasticket</title>
+    <!-- Hero Section -->
+    <section class="bg-cover bg-center h-screen" style="background-image: url('images/concert\ 1.jpg');">
+        <div class="bg-black bg-opacity-50 h-full flex items-center justify-center">
+            <div class="text-center text-white">
+                <h2 class="text-5xl font-bold mb-4 animate-bounce">Welcome to Fasticket</h2>
+                <p class="text-xl mb-8">Your one-stop platform for event tickets and hotel bookings</p>
+                <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Get Started</a>
+            </div>
+        </div>
+    </section>
 
-		<!-- CSS FILES -->
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
+    <!-- Features Section -->
+    <section class="py-12">
+        <div class="container mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-8">Our Features</h2>
+            <div class="flex flex-wrap justify-center">
+                <div class="w-full md:w-1/3 p-4">
+                    <div class="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
+                        <img src="images/event.jpeg" alt="Concert" class="w-full h-48 object-cover rounded-t-lg">
+                        <h3 class="text-2xl font-bold mt-4">Event Tickets</h3>
+                        <p class="mt-2">Book tickets for the latest events and concerts.</p>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 p-4">
+                    <div class="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
+                        <img src="images/hotel.jpeg" alt="Hotel" class="w-full h-48 object-cover rounded-t-lg">
+                        <h3 class="text-2xl font-bold mt-4">Hotel Booking</h3>
+                        <p class="mt-2">Find and book the best hotels at great prices.</p>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/3 p-4">
+                    <div class="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition-transform">
+                        <img src="images/luxery.jpeg" alt="Travel" class="w-full h-48 object-cover rounded-t-lg">
+                        <h3 class="text-2xl font-bold mt-4">Travel Packages</h3>
+                        <p class="mt-2">Explore our exclusive travel packages.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Loading -->
+<div id="loading" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+    <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+</div>
 
-		<link
-			href="https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;700;900&display=swap"
-			rel="stylesheet" />
+<!-- Footer -->
+<footer class="bg-black text-white py-8">
+        <div class="container mx-auto">
+            <div class="flex flex-wrap justify-between">
+                <div class="w-full lg:w-1/4 mb-4 lg:mb-0">
+                    <h4 class="text-2xl font-bold mb-3"><a href="index.html">Fas</a>ticket</h4>
+                    <p class="text-gray-300 mt-5 mb-4 lg:mb-0">
+                        Copyright © 2024 <strong>Fasticket</strong>
+                    </p>
+                </div>
 
-		<link href="css/bootstrap.min.css" rel="stylesheet" />
-		<link href="css/bootstrap-icons.css" rel="stylesheet" />
-
-		<link rel="stylesheet" href="css/slick.css" />
-
-		<link href="css/styles.css" rel="stylesheet" />
-	</head>
-
-	<body>
-		<section class="preloader">
-			<div class="spinner">
-				<span class="sk-inner-circle"></span>
-			</div>
-		</section>
-
-		<main>
-			<nav class="navbar navbar-expand-lg">
-				<div class="container">
-					<button
-						class="navbar-toggler"
-						type="button"
-						data-bs-toggle="collapse"
-						data-bs-target="#navbarNav"
-						aria-controls="navbarNav"
-						aria-expanded="false"
-						aria-label="Toggle navigation">
-						<span class="navbar-toggler-icon"></span>
-					</button>
-
-					<a class="navbar-brand" href="index.html">
-						<strong><span>Fas</span>ticket</strong>
-					</a>
-
-					<div class="d-lg-none">
-						<a href="sign-in.html" class="bi-person custom-icon me-3"></a>
-
-						<a href="product-detail.html" class="bi-bag custom-icon"></a>
-					</div>
-
-					<div class="collapse navbar-collapse" id="navbarNav">
-						<ul class="navbar-nav mx-auto">
-							<li class="nav-item">
-								<a class="nav-link active" href="index.html">Home</a>
-							</li>
-
-							<li class="nav-item">
-								<a class="nav-link" href="about.html">About Us</a>
-							</li>
-
-							<li class="nav-item">
-								<a class="nav-link" href="products.html">Tickets</a>
-							</li>
-
-							<li class="nav-item">
-								<a class="nav-link" href="faq.html">FAQs</a>
-							</li>
-
-							<li class="nav-item">
-								<a class="nav-link" href="contact.html">Contact</a>
-							</li>
-						</ul>
-
-						<div class="d-none d-lg-block">
-							<a href="sign-in.html" class="bi-person custom-icon me-3"></a>
-
-							<a href="product-detail.html" class="bi-bag custom-icon"></a>
-						</div>
-					</div>
-				</div>
-			</nav>
-
-			<section class="slick-slideshow">
-				<div class="slick-custom" style="height: 100vh">
-					<img
-						src="https://img.freepik.com/free-photo/tickets-wooden-background_144627-32374.jpg?semt=ais_hybrid"
-						class="img-fluid"
-						style="height: 100vh"
-						alt="" />
-
-					<div class="slick-bottom">
-						<div class="container">
-							<div class="row">
-								<div class="col-lg-6 col-10">
-									<h1 class="slick-title">Fasticket</h1>
-
-									<p class="lead text-white mt-lg-3 mb-lg-5">
-										Experience the ultimate ticket booking platform with Fasticket. 
-										From music concerts and movies to hotel bookings and more, 
-										we provide a seamless and enjoyable ticket purchasing experience. 
-										Join us and explore a world of events and experiences tailored just for you.
-									</p>
-
-									<a href="ticket.html" class="btn custom-btn"> Buy Now</a>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div class="slick-custom" style="height: 100vh">
-					<img
-						src="images/slideshow/team-meeting-renewable-energy-project.jpeg"
-						class="img-fluid"
-						style="height: 100vh"
-						alt="" />
-
-					<div class="slick-bottom">
-						<div class="container">
-							<div class="row">
-								<div class="col-lg-6 col-10">
-									<h1 class="slick-title">Hot Tickets</h1>
-
-									<p class="lead text-white mt-lg-3 mb-lg-5">
-										At Fasticket, we pride ourselves on being a reliable partner
-										for all your event management and ticket handling needs.
-										Trust us to handle your ticketing with precision and care,
-										so you can focus on creating unforgettable experiences for
-										your attendees.
-									</p>
-
-									<a href="product.html" class="btn custom-btn"
-										>Explore Tickets & Events</a
-									>
-								</div>
-							</div>
-						</div>
+                <div class="w-full lg:w-2/4 mb-4 lg:mb-0">
+                    <h5 class="text-xl font-bold mb-3">Sitemap</h5>
+                    <ul class="flex flex-wrap">
+                        <li class="w-1/2 lg:w-1/4 mb-2">
+                            <a href="about.html" class="text-gray-300 hover:text-white">About Us</a>
+                        </li>
+                        <li class="wuu-1/2 lg:w-1/4 mb-2">
+                            <a href="events.html" class="text-gray-300 hover:text-white">Events</a>
+                        </li>
+                        <li class="w-1/2 lg:w-1/4 mb-2">
+                            <a href="contact.html" class="text-gray-300 hover:text-white">Contact</a>
+                        </li>
+						<li class="w-1/2 lg:w-1/4 mb-2">
+							<a href="/privacy" class="text-gray-300 hover:text-white">Privacy policy</a>
+						</li>
+                    </ul>
+                </div>
+				<div class="w-full lg:w-1/4 mb-4 lg:mb-4">
+					<h5 class="text-xl font-bold mb-3">Follow Us</h5>
+					<div class="flex space-x-4">
+						<a href="https://www.facebook.com" target="_blank" class="text-gray-300 hover:text-white">
+							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M22.675 0h-21.35C.595 0 0 .595 0 1.325v21.351C0 23.405.595 24 1.325 24H12.82v-9.294H9.692v-3.622h3.128V8.413c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.794.715-1.794 1.763v2.31h3.587l-.467 3.622h-3.12V24h6.116c.73 0 1.325-.595 1.325-1.324V1.325C24 .595 23.405 0 22.675 0z"/>
+							</svg>
+						</a>
+						<a href="https://www.twitter.com" target="_blank" class="text-gray-300 hover:text-white">
+							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M23.954 4.569c-.885.392-1.83.656-2.825.775 1.014-.608 1.794-1.574 2.163-2.723-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124-4.087-.205-7.713-2.165-10.141-5.144-.423.722-.666 1.561-.666 2.457 0 1.694.863 3.188 2.175 4.066-.803-.026-1.56-.247-2.22-.616v.062c0 2.366 1.684 4.342 3.918 4.788-.41.111-.84.171-1.285.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.376 4.6 3.415-1.68 1.319-3.809 2.105-6.102 2.105-.396 0-.79-.023-1.175-.067 2.179 1.397 4.768 2.213 7.557 2.213 9.054 0 14.002-7.496 14.002-13.986 0-.21 0-.423-.015-.634.961-.695 1.8-1.562 2.46-2.549z"/>
+							</svg>
+						</a>
+						<a href="https://www.instagram.com" target="_blank" class="text-gray-300 hover:text-white">
+							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.334 3.608 1.31.975.975 1.248 2.242 1.31 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.334 2.633-1.31 3.608-.975.975-2.242 1.248-3.608 1.31-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.334-3.608-1.31-.975-.975-1.248-2.242-1.31-3.608-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.334-2.633 1.31-3.608.975-.975 2.242-1.248 3.608-1.31 1.266-.058 1.646-.07 4.85-.07zm0-2.163C8.756 0 8.332.012 7.052.07 5.773.128 4.512.334 3.354 1.492 2.196 2.65 1.99 3.911 1.932 5.19.874 6.47.862 6.894.862 12s.012 5.53.07 6.81c.058 1.279.264 2.54 1.422 3.698 1.158 1.158 2.419 1.364 3.698 1.422 1.279.058 1.703.07 6.81.07s5.53-.012 6.81-.07c1.279-.058 2.54-.264 3.698-1.422 1.158-1.158 1.364-2.419 1.422-3.698.058-1.279.07-1.703.07-6.81s-.012-5.53-.07-6.81c-.058-1.279-.264-2.54-1.422-3.698-1.158-1.158-2.419-1.364-3.698-1.422-1.279-.058-1.703-.07-6.81-.07zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0-2.88 1.44 1.44 0 0 0 0 2.88z"/>
+							</svg>
+						</a>
+						<a href="https://www.whatsapp.com" target="_blank" class="text-gray-300 hover:text-white"></a>
+							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.516 5.857L0 24l6.143-1.516A11.946 11.946 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm6.29 17.71c-.26.73-1.52 1.35-2.1 1.44-.56.08-1.23.11-1.98-.12-.45-.14-1.03-.34-1.77-.67-3.12-1.35-5.14-4.5-5.3-4.72-.15-.21-1.27-1.69-1.27-3.23 0-1.54.81-2.3 1.1-2.61.29-.31.64-.39.86-.39.22 0 .43.01.61.01.2 0 .46-.07.72.55.26.62.88 2.14.95 2.3.08.15.13.32.03.51-.1.19-.15.31-.29.48-.15.15-.31.34-.45.51-.15.17-.31.36-.13.7.17.34.75 1.23 1.61 2 .99.88 1.82 1.16 2.16 1.29.34.13.54.11.74-.07.2-.18.85-.99 1.08-1.33.23-.34.45-.28.75-.17.3.11 1.9.89 2.23 1.05.33.16.55.24.63.37.08.13.08.75-.18 1.46z"/>
+							</svg>
+						</a>
+						<a href="https://www.twitter.com" target="_blank" class="text-gray-300 hover:text-white">
+							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M23.954 4.569c-.885.392-1.83.656-2.825.775 1.014-.608 1.794-1.574 2.163-2.723-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124-4.087-.205-7.713-2.165-10.141-5.144-.423.722-.666 1.561-.666 2.457 0 1.694.863 3.188 2.175 4.066-.803-.026-1.56-.247-2.22-.616v.062c0 2.366 1.684 4.342 3.918 4.788-.41.111-.84.171-1.285.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.376 4.6 3.415-1.68 1.319-3.809 2.105-6.102 2.105-.396 0-.79-.023-1.175-.067 2.179 1.397 4.768 2.213 7.557 2.213 9.054 0 14.002-7.496 14.002-13.986 0-.21 0-.423-.015-.634.961-.695 1.8-1.562 2.46-2.549z"/>
+							</svg>
+						</a>
 					</div>
 				</div>
-
-				<div class="slick-custom" style="height: 100vh">
-					<img
-						src="images/slideshow/two-business-partners-working-together-office-computer.jpeg"
-						class="img-fluid"
-						style="height: 100vh"
-						alt="" />
-
-					<div class="slick-bottom">
-						<div class="container">
-							<div class="row">
-								<div class="col-lg-6 col-10">
-									<h1 class="slick-title">Talk to us</h1>
-
-									<p class="lead text-white mt-lg-3 mb-lg-5">
-										For any inquiries or assistance, feel free to reach out to
-										us. Our dedicated team is here to help you with all your
-										ticketing needs and ensure you have the best experience.
-										Contact us today and let us assist you in making your event
-										unforgettable.
-									</p>
-
-									<a href="contact.html" class="btn custom-btn"> Contact us</a>
-								</div>
-							</div>
-						</div>
-					</div>
 				</div>
-			</section>
 
-			<section class="featured-product section-padding">
-				<div class="container">
-					<div class="row">
-						<div class="col-12 text-center">
-							<h2 class="mb-5">Upcoming Events</h2>
-						</div>
+            </div>
+        </div>
+    </footer>
 
-						<div class="col-lg-4 col-12 mb-3">
-							<div class="product-thumb">
-								<a href="product-detail.html">
-									<img
-										src="https://img.freepik.com/premium-photo/travel-passport-excited-portrait-black-woman-studio-with-flight-documents-tickets-boarding-id-traveling-mockup-happy-girl-celebrate-immigration-usa-holiday-global-vacation_590464-170603.jpg?semt=ais_hybrid"
-										class="img-fluid product-image"
-										alt="" />
-								</a>
-
-								<div class="product-top d-flex">
-									<span class="product-alert me-auto"> New Arrival</span>
-
-									<a href="#" class="bi-heart-fill product-icon"></a>
-								</div>
-
-								<div class="product-info d-flex">
-									<div>
-										<h5 class="product-title mb-0">
-											<a href="product-detail.html" class="product-title-link"
-												>Cheapeast</a
-											>
-										</h5>
-
-										<p class="product-p">
-											affordable to annyone students inclusive
-										</p>
-									</div>
-
-									<small class="product-price text-muted ms-auto mt-auto mb-5"
-										>$25</small
-									>
-								</div>
-							</div>
-						</div>
-
-						<div class="col-lg-4 col-12 mb-3">
-							<div class="product-thumb">
-								<a href="product-detail.html">
-									<img
-										src="https://img.freepik.com/premium-photo/man-posing-studio_255757-5206.jpg?semt=ais_hybrid"
-										class="img-fluid product-image"
-										alt="" />
-								</a>
-
-								<div class="product-top d-flex">
-									<span class="product-alert">Low Price</span>
-
-									<a href="#" class="bi-heart-fill product-icon ms-auto"></a>
-								</div>
-
-								<div class="product-info d-flex">
-									<div>
-										<h5 class="product-title mb-0">
-											<a href="product-detail.html" class="product-title-link"
-												>Made for you</a
-											>
-										</h5>
-
-										<p class="product-p">Medium</p>
-									</div>
-
-									<small class="product-price text-muted ms-auto mt-auto mb-5"
-										>$35</small
-									>
-								</div>
-							</div>
-						</div>
-
-						<div class="col-lg-4 col-12">
-							<div class="product-thumb">
-								<a href="product-detail.html">
-									<img
-										src="https://img.freepik.com/premium-vector/man-stands-near-smartphone-screen-cinema-movie-ticket-admission-pass-admit-one_123447-5797.jpg?semt=ais_hybrid"
-										class="img-fluid product-image"
-										alt="" />
-								</a>
-
-								<div class="product-top d-flex">
-									<a href="#" class="bi-heart-fill product-icon ms-auto"></a>
-								</div>
-
-								<div class="product-info d-flex">
-									<div>
-										<h5 class="product-title mb-0">
-											<a href="product-detail.html" class="product-title-link"
-												>Cinema</a
-											>
-										</h5>
-
-										<p class="product-p">High Budget and cost</p>
-									</div>
-
-									<small class="product-price text-muted ms-auto mt-auto mb-5"
-										>$45</small
-									>
-								</div>
-							</div>
-						</div>
-
-						<div class="col-12 text-center"> 
-							<a href="products.html" class="view-all">View All Tickets</a>
-						</div>
-					</div>
-				</div>
-			</section>
-		</main>
-
-		<footer class="site-footer">
-			<div class="container">
-				<div class="row">
-					<div class="col-lg-3 col-10 me-auto mb-4">
-						<h4 class="text-white mb-3"><a href="index.html">Fas</a>tickets</h4>
-						<p class="copyright-text text-muted mt-lg-5 mb-4 mb-lg-0">
-							Copyright © 2024 <strong>Fasticket</strong>
-						</p>
-						<br />
-					</div>
-
-					<div class="col-lg-5 col-8">
-						<h5 class="text-white mb-3">Sitemap</h5>
-
-						<ul class="footer-menu d-flex flex-wrap">
-							<li class="footer-menu-item">
-								<a href="about.html" class="footer-menu-link">About Us</a>
-							</li>
-
-							<li class="footer-menu-item">
-								<a href="#" class="footer-menu-link">Tickets</a>
-							</li>
-
-							<li class="footer-menu-item">
-								<a href="#" class="footer-menu-link">Privacy policy</a>
-							</li>
-
-							<li class="footer-menu-item">
-								<a href="#" class="footer-menu-link">FAQs</a>
-							</li>
-
-							<li class="footer-menu-item">
-								<a href="#" class="footer-menu-link">Contact</a>
-							</li>
-						</ul>
-					</div>
-
-					<div class="col-lg-3 col-4">
-						<h5 class="text-white mb-3">Social</h5>
-
-						<ul class="social-icon">
-							<li><a href="#" class="social-icon-link bi-youtube"></a></li>
-
-							<li><a href="#" class="social-icon-link bi-whatsapp"></a></li>
-
-							<li><a href="#" class="social-icon-link bi-instagram"></a></li>
-
-							<li><a href="#" class="social-icon-link bi-skype"></a></li>
-						</ul>
-					</div>
-				</div>
-			</div>
-		</footer>
-
-		<!-- JAVASCRIPT FILES -->
-		<script src="js/jquery.min.js"></script>
-		<script src="js/bootstrap.bundle.min.js"></script>
-		<script src="js/Headroom.js"></script>
-		<script src="js/jQuery.headroom.js"></script>
-		<script src="js/slick.min.js"></script>
-		<script src="js/custom.js"></script>
-	</body>
+</body>
 </html>
+<script>
+
+    // Hero Section Images and text with transition
+
+    const images = [
+    'images/concert\ 1.jpg',
+    'images/concert\ 2.jpeg',
+    'images/concert\ 3.jpeg'
+    ];
+
+    const texts = [
+    { title: 'Welcome to Fasticket', subtitle: 'Your one-stop platform for event tickets and hotel bookings' },
+    { title: 'Discover Amazing Events', subtitle: 'Find and book tickets for the best events around you' },
+    { title: 'Book Your Stay', subtitle: 'Get the best deals on hotel bookings around you' }
+    ];
+
+    let currentIndex = 0;
+
+    function changeHeroContent() {
+    const heroSection = document.querySelector('section');
+    const heroTitle = document.querySelector('.text-center h2');
+    const heroSubtitle = document.querySelector('.text-center p');
+
+    // Add fade-out class
+    heroSection.classList.add('fade-out');
+    heroTitle.classList.add('fade-out');
+    heroSubtitle.classList.add('fade-out');
+
+    setTimeout(() => {
+        currentIndex = (currentIndex + 1) % images.length;
+        heroSection.style.backgroundImage = `url('${images[currentIndex]}')`;
+        heroTitle.textContent = texts[currentIndex].title;
+        heroSubtitle.textContent = texts[currentIndex].subtitle;
+
+        // Remove fade-out class and add fade-in class
+        heroSection.classList.remove('fade-out');
+        heroTitle.classList.remove('fade-out');
+        heroSubtitle.classList.remove('fade-out');
+
+        heroSection.classList.add('fade-in');
+        heroTitle.classList.add('fade-in');
+        heroSubtitle.classList.add('fade-in');
+    }, 3000); // Duration of fade-out transition
+    }
+
+    setInterval(changeHeroContent, 30000);
+
+    // loading 
+document.addEventListener("DOMContentLoaded", function() {
+                setTimeout(function() {
+                    var loading = document.getElementById('loading');
+                    loading.style.display = 'none';
+                }, 200); // 3 seconds delay
+            });
+        </script>
