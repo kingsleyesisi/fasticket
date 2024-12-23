@@ -10,8 +10,23 @@
 
     <!-- Header -->
     <header class="bg-gray-900 text-white p-4">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-3xl font-bold"><span class="text-red-600"> Fast</span>icket</h1>
+		<div class="container mx-auto flex justify-between items-center">
+			<div class="flex items-center">
+			<img src="images/logo.png" alt="Fasticket Logo" class="h-10 mr-3">
+			</div>
+			<p id="typing-text" class="text-xl font-semibold hidden md:block text-gray-300 mt-2"></p>
+			<script>
+			const text = "Your best option...";
+			let index = 0;
+			function typeText() {
+				if (index < text.length) {
+				document.getElementById("typing-text").textContent += text.charAt(index);
+				index++;
+				setTimeout(typeText, 400);
+				}
+			}
+			typeText();
+			</script>
             <button id="menu-toggle" class="md:hidden block">
                 <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -39,7 +54,7 @@
         <div class="bg-black bg-opacity-50 h-full flex items-center justify-center">
             <div class="text-center text-white">
                 <h2 class="text-5xl font-bold mb-4 animate-bounce">Welcome to Fasticket</h2>
-                <p class="text-xl mb-8">Your one-stop platform for event tickets and hotel bookings</p>
+                <p class="text-xl mb-8">Discover events happening around you and purchase the ticket at a go </p>
                 <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Get Started</a>
             </div>
         </div>
@@ -160,8 +175,8 @@
     ];
 
     const texts = [
-    { title: 'Welcome to Fasticket', subtitle: 'Your one-stop platform for event tickets and hotel bookings' },
-    { title: 'Discover Amazing Events', subtitle: 'Find and book tickets for the best events around you' },
+    { title: 'Welcome to Fasticket', subtitle: 'Discover events happening around you and purchase the ticket at a go' },
+    { title: 'Discover Amazing Events', subtitle: 'Your one-stop platform for event tickets and hotel bookings' },
     { title: 'Book Your Stay', subtitle: 'Get the best deals on hotel bookings around you' }
     ];
 
