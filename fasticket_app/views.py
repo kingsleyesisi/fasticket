@@ -53,3 +53,14 @@ class RegisterUser(APIView):
           'user_id': user.pk,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
+
+
+# These are just for testing purposes
+def clearDB(request):
+  db = UserProfile.objects.all()
+  db.delete()
+  return Response({'message': 'All data cleared'}, status=status.HTTP_200_OK)
+
+def viewDB(request):
+  user_profiles = UserProfile.objects.all()
+  return render(request, 'index.html', {'data': user_profiles})
