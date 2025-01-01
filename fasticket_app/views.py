@@ -16,15 +16,22 @@ from django.contrib.auth.models import User
 # API endpoint for authentication of users
 class CustomAuthToken(ObtainAuthToken):
   def post(self, request, *args, **kwargs):
-    response = super(CustomAuthToken, self).post(request, *args, **kwargs)
-    token = Token.objects.get(key=response.data['token'])
-    user = User.objects.get(id=token.user_id)
-    return Response({
-      'token': token.key,
-      'user_id': user.pk,
-      'email': user.email
-    })
-
+    try:
+      response = super(CustomAuthToken, self).post(request, *args, **kwargs)
+      token = Token.objects.get(key=response.data['token'])
+      user = User.objects.get(id=token.user_id)
+      return Response({
+        'token': token.key,
+        'user_id': user.pk,
+        'username': user.username,
+        'email': user.email
+      })
+    except Token.DoesNotExist:
+      return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+      return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 # API endpoint for registering users
 class RegisterUser(APIView):
   permission_classes = [AllowAny]
@@ -51,6 +58,7 @@ class RegisterUser(APIView):
       return Response({
           'token': token.key,
           'user_id': user.pk,
+          'username': user.username,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
 
