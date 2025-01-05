@@ -21,9 +21,10 @@ class InitializePaymentView(APIView):
 
           if response.status_code == 302 or 200:
               response_data = dict(json.loads(response.content.decode('utf-8')))
-              print(response_data, type(response_data))
-              
-              return JsonResponse({'data': response_data['payment_data']['data']}, status=200)
+              # print(response_data, type(response_data))
+              data = response_data['payment_data']['data']
+              print(data)
+              return JsonResponse(data, status=200)
 
           return JsonResponse({'error': 'Payment initialization failed'}, status=response.status_code)
 
