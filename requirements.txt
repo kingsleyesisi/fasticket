@@ -9,3 +9,8 @@ rest-framework-simplejwt==0.0.2
 sqlparse==0.5.3
 gunicorn==23.0.0
 uvicorn==0.31.0
+paystack==1.5.0
+python-dotenv==1.0.1
+requests==2.32.3
+simplejson==3.19.3
+sqlparse==0.5.3
