@@ -1,6 +1,4 @@
-from django.shortcuts import render
-from rest_framework import viewsets, generics, status
-from rest_framework import permissions
+from rest_framework import status, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -11,19 +9,30 @@ from rest_framework.authtoken.models import Token
 from .models import UserProfile
 from .serializers import UserProfileSerializer
 from django.contrib.auth.models import User
+from rest_framework.throttling import UserRateThrottle
 
-# Create your views here.
-# API endpoint for authentication of users
+# API endpoint for authentication and creation  of users Profile
 class CustomAuthToken(ObtainAuthToken):
+  throttle_classes = [UserRateThrottle]
+
   def post(self, request, *args, **kwargs):
-    response = super(CustomAuthToken, self).post(request, *args, **kwargs)
-    token = Token.objects.get(key=response.data['token'])
-    user = User.objects.get(id=token.user_id)
-    return Response({
-      'token': token.key,
-      'user_id': user.pk,
-      'email': user.email
-    })
+    try:
+      response = super(CustomAuthToken, self).post(request, *args, **kwargs)
+      token = Token.objects.get(key=response.data['token'])
+      user = User.objects.get(id=token.user_id)
+      return Response({
+        'token': token.key,
+        'user_id': user.pk,
+        'username': user.username,
+        'email': user.email
+      })
+    except Token.DoesNotExist:
+      return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+      return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # API endpoint for registering users
 class RegisterUser(APIView):
@@ -51,16 +60,6 @@ class RegisterUser(APIView):
       return Response({
           'token': token.key,
           'user_id': user.pk,
+          'username': user.username,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
-
-
-# These are just for testing purposes
-def clearDB(request):
-  db = UserProfile.objects.all()
-  db.delete()
-  return Response({'message': 'All data cleared'}, status=status.HTTP_200_OK)
-
-def viewDB(request):
-  user_profiles = UserProfile.objects.all()
-  return render(request, 'index.html', {'data': user_profiles})
