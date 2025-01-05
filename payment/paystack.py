@@ -1,26 +1,55 @@
-import requests
+import requests 
 from django.conf import settings
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import redirect 
+from django.contrib.sites.shortcuts import get_current_site
+import json
+
 
 class Paystack:
-  PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
-  PAYSTACK_PUBLIC_KEY = settings.PAYSTACK_PUBLIC_KEY
+    def __init__(self):
+        self.secret_key = settings.PAYSTACK_SECRET_KEY
+        self.publick_key = settings.PAYSTACK_PUBLIC_KEY
+        self.headers = {
+            'Authorization': f'Bearer {self.secret_key}',
+            'Content-Type': 'application/json'
+        }
+        self.base_url = 'https://api.paystack.co'
 
-  base_url = 'https://api.paystack.co/'
+    def Pay(self, email, amount, eventID, **kwargs):
+      email = email
+      amount = amount * 100 # convert from kobo to Naira
+      eventID = eventID
 
-  def verify_payment(self, ref, *args, **kwargs):
-    path = f'transaction/verify/{ref}'
-    headers = {
-      "Authorization": f"Bearer {self.PAYSTACK_SECRET_KEY}",
-      "Content-Type": "application/json",
-    }
+      # Initialize payment with paystack 
+      initialization_url = f'{self.base_url}/transaction/initialize'
+      domain = get_current_site(kwargs.get('request')).domain
 
-    url = self.base_url + path
-    response = requests.get(url, headers=headers)
+      data = {
+         "email": email,
+          "amount": amount,
+          "Currency": "NGN",
+          "callback_url": f'http://{domain}/payments/verify_payment'}
 
-    if response.status_code == 200:
-      response_data = response.json()
-      return response_data['status'], response_data['data']
 
-    response_data = response_data.json()
+      response = requests.post(initialization_url, headers=self.headers, json=data)
 
-    return response_data['status'], response_data['message']
+      if response.status_code == 200:
+          payment_data = response.json()
+          payment_url = payment_data.get("data", {}).get("authorization_url")
+          if payment_url:
+              # print(payment_data) # for debugging
+              print(payment_url) # for debugging
+              data = {
+                  "payment_data": payment_data,
+
+              }
+              return HttpResponse(json.dumps(data), status=200)
+          else:
+              return JsonResponse(
+                  {"error": "Payment URL not found"}, status=400
+              )
+      else:
+          return JsonResponse(
+              {"error": "Payment initialization failed"}, status=400
+          )
