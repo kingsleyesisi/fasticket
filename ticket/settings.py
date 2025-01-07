@@ -72,7 +72,24 @@ CORS_ALLOWED_METHODS = [
     'OPTIONS',
 ]
 
+# CORS_ALLOW_ALLOWED_METHODS = True
 
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'https://fasticket-react-w1x7.vercel.app',
+    'http://localhost:8000',
+]
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_ORIGIN_REGEX = r'^(https?:\/\/)?localhost(:[0-9]+)?$'
+
+CORS_ALLOW_PUBLIC = True
+
+CORS_ALLOW_PRIVATE = True
+
+CORS_ALLOW_PROXY = True
+
+# NOTE this is not recommended for production just for debugging the 
 
 TEMPLATES = [
     {
