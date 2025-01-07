@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile
+from .models import UserProfile, EventsInfo
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
