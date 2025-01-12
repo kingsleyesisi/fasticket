@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'fasticket_app',
+    'payment',
 ]
 
 MIDDLEWARE = [

@@ -17,6 +17,9 @@ class Paystack:
         self.base_url = 'https://api.paystack.co'
 
     def Pay(self, email, amount, eventID, **kwargs):
+      """
+      Initialize the payment
+      """
       email = email
       amount = amount * 100 # convert from kobo to Naira
       eventID = eventID
@@ -29,7 +32,8 @@ class Paystack:
          "email": email,
           "amount": amount,
           "Currency": "NGN",
-          "callback_url": f'http://{domain}/payments/verify_payment'}
+          "callback_url": f'http://{domain}/payments/callback'
+          }
 
 
       response = requests.post(initialization_url, headers=self.headers, json=data)
@@ -38,8 +42,6 @@ class Paystack:
           payment_data = response.json()
           payment_url = payment_data.get("data", {}).get("authorization_url")
           if payment_url:
-              # print(payment_data) # for debugging
-              print(payment_url) # for debugging
               data = {
                   "payment_data": payment_data,
 
@@ -53,3 +55,25 @@ class Paystack:
           return JsonResponse(
               {"error": "Payment initialization failed"}, status=400
           )
+    
+
+    # Verificatin of the Payment 
+    def verify_payment(self, reference):
+      """
+      Verify payment with Paystack using the provided reference
+      """
+      verify_url = f"{self.base_url}/transaction/verify/{reference}"
+      
+      try:
+          response = requests.get(verify_url, headers=self.headers)
+          response.raise_for_status()
+
+          verify_data = response.json()
+
+          if verify_data.get('status') and verify_data.get('data').get('status') == 'success':
+              return verify_data['data']
+          else: 
+              return None
+      except requests.RequestException as e:
+        print(f"Error verifying payment: {e}")
+        return None

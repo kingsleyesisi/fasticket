@@ -22,7 +22,7 @@ class Payments(models.Model):
 
     def save(self, *args, **kwargs):
         paystack = Paystack()
-        status, data_or_message = paystack.verify_payment(self.reference)
+        status = paystack.verify_payment(self.reference)
 
         if status == True:
             self.paid_at = timezone.now()
@@ -34,7 +34,7 @@ class Payments(models.Model):
 
     def verify_payment(self):
         paystack = Paystack()
-        status, result = paystack.verify_payment(self.reference, self.amount)
+        status, result = paystack.verify_payment(self.reference)
         if status == True:
             self.Verified = True
             self.save()
