@@ -17,7 +17,7 @@ Thumbs.db
 desktop.ini
 
 # Ignore environment variable files
-venv/
+.venv/
 .env
 .env.local
 

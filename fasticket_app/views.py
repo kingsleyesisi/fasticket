@@ -17,19 +17,26 @@ class CustomAuthToken(ObtainAuthToken):
 
   def post(self, request, *args, **kwargs):
     try:
-      response = super(CustomAuthToken, self).post(request, *args, **kwargs)
-      token = Token.objects.get(key=response.data['token'])
-      user = User.objects.get(id=token.user_id)
+      username_or_email = request.data.get('username') or request.data.get('email')
+      password = request.data.get('password')
+
+      if '@' in username_or_email:
+        user = User.objects.get(email=username_or_email)
+      else:
+        user = User.objects.get(username=username_or_email)
+
+      if not user.check_password(password):
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+      token, created = Token.objects.get_or_create(user=user)
       return Response({
         'token': token.key,
         'user_id': user.pk,
         'username': user.username,
         'email': user.email
       })
-    except Token.DoesNotExist:
-      return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
-      return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+      return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
