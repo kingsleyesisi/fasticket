@@ -77,3 +77,11 @@ class Paystack:
       except requests.RequestException as e:
         print(f"Error verifying payment: {e}")
         return None
+if __name__ == "__main__":
+    amount = 2000
+    email = 'testemail@gmail.com'
+    eventID = 'event123'
+    paystack = Paystack()
+    request = None  # Replace with actual request object if available
+    initiate = paystack.Pay(email=email, amount=amount, eventID=eventID, request=request)
+    print(initiate.content)

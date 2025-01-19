@@ -42,7 +42,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'fasticket_app',
-    'event_manager',
+    # 'event_manager',
     'payment',
 ]
 
@@ -59,6 +59,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ticket.urls'
 
+
+
+
+# NOTE this is not recommended for production just for debugging and testing during development
 # CORS Settings
 CORS_ALLOW_ALL = True
 
@@ -78,6 +82,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://fasticket-react-w1x7.vercel.app',
     'http://localhost:8000',
+    'https://fasticketss.vercel.app',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -89,7 +94,6 @@ CORS_ALLOW_PRIVATE = True
 
 CORS_ALLOW_PROXY = True
 
-# NOTE this is not recommended for production just for debugging the 
 
 TEMPLATES = [
     {
@@ -173,5 +177,5 @@ REST_FRAMEWORK = {
 }
 
 # Media Folder Settings
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'

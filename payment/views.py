@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Payments
-from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
 from rest_framework import status 
