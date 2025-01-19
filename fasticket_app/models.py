@@ -3,8 +3,6 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 import uuid
 
-# Create your models here.
-
 # Userprofile Model
 class UserProfile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
