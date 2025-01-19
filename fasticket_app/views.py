@@ -17,6 +17,11 @@ class CustomAuthToken(ObtainAuthToken):
 
   def post(self, request, *args, **kwargs):
     try:
+<<<<<<< HEAD
+      response = super(CustomAuthToken, self).post(request, *args, **kwargs)
+      token = Token.objects.get(key=response.data['token'])
+      user = User.objects.get(id=token.user_id)
+=======
       username_or_email = request.data.get('username') or request.data.get('email')
       password = request.data.get('password')
 
@@ -29,18 +34,28 @@ class CustomAuthToken(ObtainAuthToken):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
       token, created = Token.objects.get_or_create(user=user)
+>>>>>>> DRFbackend
       return Response({
         'token': token.key,
         'user_id': user.pk,
         'username': user.username,
         'email': user.email
       })
+<<<<<<< HEAD
+    except Token.DoesNotExist:
+      return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+      return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+=======
     except User.DoesNotExist:
       return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+>>>>>>> DRFbackend
 # API endpoint for registering users
 class RegisterUser(APIView):
   permission_classes = [AllowAny]
