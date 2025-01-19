@@ -1,6 +1,4 @@
-from django.shortcuts import render
-from rest_framework import viewsets, generics, status
-from rest_framework import permissions
+from rest_framework import status, permissions
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
@@ -11,27 +9,53 @@ from rest_framework.authtoken.models import Token
 from .models import UserProfile
 from .serializers import UserProfileSerializer
 from django.contrib.auth.models import User
+from rest_framework.throttling import UserRateThrottle
 
-# Create your views here.
-# API endpoint for authentication of users
+# API endpoint for authentication and creation  of users Profile
 class CustomAuthToken(ObtainAuthToken):
+  throttle_classes = [UserRateThrottle]
+
   def post(self, request, *args, **kwargs):
     try:
+<<<<<<< HEAD
       response = super(CustomAuthToken, self).post(request, *args, **kwargs)
       token = Token.objects.get(key=response.data['token'])
       user = User.objects.get(id=token.user_id)
+=======
+      username_or_email = request.data.get('username') or request.data.get('email')
+      password = request.data.get('password')
+
+      if '@' in username_or_email:
+        user = User.objects.get(email=username_or_email)
+      else:
+        user = User.objects.get(username=username_or_email)
+
+      if not user.check_password(password):
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+      token, created = Token.objects.get_or_create(user=user)
+>>>>>>> DRFbackend
       return Response({
         'token': token.key,
         'user_id': user.pk,
         'username': user.username,
         'email': user.email
       })
+<<<<<<< HEAD
     except Token.DoesNotExist:
       return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
       return Response({'error': 'Invalid user'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+=======
+    except User.DoesNotExist:
+      return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+>>>>>>> DRFbackend
 # API endpoint for registering users
 class RegisterUser(APIView):
   permission_classes = [AllowAny]
@@ -61,14 +85,3 @@ class RegisterUser(APIView):
           'username': user.username,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
-
-
-# These are just for testing purposes
-def clearDB(request):
-  db = UserProfile.objects.all()
-  db.delete()
-  return Response({'message': 'All data cleared'}, status=status.HTTP_200_OK)
-
-def viewDB(request):
-  user_profiles = UserProfile.objects.all()
-  return render(request, 'index.html', {'data': user_profiles})

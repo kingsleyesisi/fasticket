@@ -23,37 +23,3 @@ class UserProfile(models.Model):
     
     def get_short_name(self):
         return self.user.first_name
-    
-
-
-
-# This is for all the events  that will be created
-" Ask for the information needed to host an event"
-class EventsInfo(models.Model):
-    title = models.CharField(max_length=100)
-    description = models.TextField()
-    location = models.CharField(max_length=100)
-    date = models.DateField()
-    time = models.TimeField()
-    photo = models.ImageField(upload_to='media/')
-    expected_guests = models.IntegerField()
-    
-
-    class TicketGrade(models.TextChoices):
-      VIP = 'VIP', _('VIP')
-      REGULAR = 'REGULAR', _('Regular')
-      ECONOMY = 'ECONOMY', _('Economy')
-
-    grade = models.CharField(
-      max_length=10,
-      choices=TicketGrade.choices,
-      default=TicketGrade.REGULAR,
-    )
-    ticket_price = models.DecimalField(max_digits=10, decimal_places=2)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.title
-  
