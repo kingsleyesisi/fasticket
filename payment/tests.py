@@ -1,37 +1,75 @@
-import requests_mock
-from django.test import TestCase, RequestFactory
-from django.conf import settings
-from django.contrib.sites.models import Site
-from .paystack import Paystack
+from django.test import TestCase
 
-class PaystackTestCase(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-        self.paystack = Paystack()
-        self.email = 'test@example.com'
-        self.amount = 10000  # Amount in kobo (100 NGN)
-        self.site = Site.objects.get_current()
+# Create your tests here.
+import requests
+import time 
 
-    @requests_mock.Mocker()
-    def test_pay(self, mock):
-        # Mock the Paystack API response
-        mock.post(f'{self.paystack.base_url}/transaction/initialize', json={
-            "status": True,
-            "message": "Authorization URL created",
-            "data": {
-                "authorization_url": "https://paystack.com/pay/testurl",
-                "access_code": "ACCESS_CODE",
-                "reference": "REFERENCE"
-            }
-        })
 
-        # Create a mock request
-        request = self.factory.get('/')
-        request.site = self.site
+def runtime(func):
+    """
+    A decorator to check the runtime of the function
 
-        # Call the Pay method
-        response = self.paystack.Pay(self.email, self.amount, request=request)
+    Args:
+        func: function to be executed
 
-        # Check the response
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "https://paystack.com/pay/testurl")
+    Return:
+        wrapper: function to be executed
+
+    """
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"Time taken: {end - start}")
+        return result
+    return wrapper
+
+
+# @runtime
+def register():
+    data = {
+    "username" : "Username",
+    "email" : "useremail@gmail.com",
+    "phone" : 9025993439493,
+    "password" : "this is the password",
+    "first_name": "first name",
+    "last_name": "last name",
+    "company" : "company",
+}
+
+    url = "http://127.0.0.1:8000/auth/register"
+
+    response = requests.post(url, data=data)
+    return response.text
+
+
+@runtime
+def login():
+    data = {
+        "username" : "Username",
+        "email" : "useremail@gmail.com",
+        "password" : "this is the password"
+    }
+    # url = "https://fasticket.onrender.com/auth/login"
+    url = "http://127.0.0.1:8000/auth/login"
+    response = requests.post(url, data=data)
+    return response.text
+
+
+# @runtime
+class Payment:
+    
+    def initialize():
+        email = "useremail@gmail.com"
+        amount = 3000
+        body = {
+            "email" : email,
+            "amount": amount,
+        }
+        url = "http://127.0.0.1:8000/payments/initiate_payment/"
+        response = requests.post(url, data=body)
+        return response.json()
+
+
+
+print(Payment.initialize())

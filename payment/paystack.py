@@ -58,7 +58,7 @@ class Paystack:
     
 
     # Verificatin of the Payment 
-    def verify_payment(self, reference):
+    def verify(self, reference):
       """
       Verify payment with Paystack using the provided reference
       """
@@ -68,15 +68,19 @@ class Paystack:
           response = requests.get(verify_url, headers=self.headers)
           response.raise_for_status()
 
-          verify_data = response.json()
+          verification_data = response.json()
 
-          if verify_data.get('status') and verify_data.get('data').get('status') == 'success':
-              return verify_data['data']
+          if verification_data['data']['status'] == 'success':
+              return True
+          
           else: 
-              return None
+              r = verification_data['data']['status']
+              return HttpResponse(f'payment has been {r}')
+          
       except requests.RequestException as e:
         print(f"Error verifying payment: {e}")
         return None
+      
 if __name__ == "__main__":
     amount = 2000
     email = 'testemail@gmail.com'
