@@ -42,10 +42,10 @@ class CallBack(APIView):
     if status == True:
         payment.Verified = True
         payment.save()
-        return HttpResponse("Payment Verified", status=200)
+        return JsonResponse({"data": "success"}, status=200)
 
     else:
-      return HttpResponse("Payment verification failed.", status=400)  
+      return JsonResponse({"message": "Payment verification failed."}, status=400)  
 
 class ListPaymentsView(APIView):
     def get(self, request, *args, **kwargs):
