@@ -32,7 +32,7 @@ class Paystack:
          "email": email,
           "amount": amount,
           "Currency": "NGN",
-          "callback_url": f'http://{domain}/payments/callback'
+          "callback_url": f'http://{domain}/payments/verify_payment'
           }
 
 
