@@ -19,6 +19,8 @@ class Paystack:
     def Pay(self, email, amount, eventID, **kwargs):
       """
       Initialize the payment
+      Args:
+        Email, A
       """
       email = email
       amount = amount * 100 # convert from kobo to Naira
@@ -57,10 +59,16 @@ class Paystack:
           )
     
 
-    # Verificatin of the Payment 
+    # Verification of the Payment 
     def verify(self, reference):
       """
       Verify payment with Paystack using the provided reference
+
+      Args: 
+        reference (eg<38s3039>)
+
+      Returns:
+        
       """
       verify_url = f"{self.base_url}/transaction/verify/{reference}"
       
@@ -75,7 +83,8 @@ class Paystack:
           
           else: 
               r = verification_data['data']['status']
-              return HttpResponse(f'payment has been {r}')
+              reason = verification_data['data']['gateway_response']
+              return {'data': reason}
           
       except requests.RequestException as e:
         print(f"Error verifying payment: {e}")

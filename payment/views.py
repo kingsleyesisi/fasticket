@@ -45,7 +45,8 @@ class CallBack(APIView):
         return JsonResponse({"data": "success"}, status=200)
 
     else:
-      return JsonResponse({"message": "Payment verification failed."}, status=400)  
+      reason = status
+      return JsonResponse(reason, status=400)  
 
 class ListPaymentsView(APIView):
     def get(self, request, *args, **kwargs):

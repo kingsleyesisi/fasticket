@@ -45,11 +45,9 @@ def register():
 
 @runtime
 def login():
-    data = {
-        "username" : "Username",
-        "email" : "useremail@gmail.com",
-        "password" : "this is the password"
-    }
+    data = {"email": "wlfskd@gmail.com",
+            "amount": 2000}
+    
     # url = "https://fasticket.onrender.com/auth/login"
     url = "http://127.0.0.1:8000/auth/login"
     response = requests.post(url, data=data)
