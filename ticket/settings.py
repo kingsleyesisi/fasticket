@@ -42,7 +42,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'fasticket_app',
-    'event_manager',
+    # 'event_manager',
     'payment',
 ]
 
