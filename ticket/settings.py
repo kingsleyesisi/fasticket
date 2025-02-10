@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Local apps
-    'fasticket_app',
+    'Profile',
     # 'event_manager',
     'payment',
 ]

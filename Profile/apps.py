@@ -6,4 +6,4 @@ class FasticketAppConfig(AppConfig):
     name = 'fasticket_app'
 
     def ready(self):
-        import fasticket_app.signals
+        import Profile.signals
