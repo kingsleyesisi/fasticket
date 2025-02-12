@@ -5,4 +5,5 @@ from .views import CustomAuthToken, RegisterUser
 urlpatterns = [
   path('auth/login', CustomAuthToken.as_view()),
   path('auth/register', RegisterUser.as_view()),
+  path('checkAuth', views.test),
 ]
