@@ -11,7 +11,7 @@ from .serializers import UserProfileSerializer
 from django.contrib.auth.models import User
 from rest_framework.throttling import UserRateThrottle
 from .permissions import HasValidTokenPermission
-
+from datetime import datetime
 
 
 # Login View
@@ -32,11 +32,13 @@ class CustomAuthToken(ObtainAuthToken):
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
 
       token, created = Token.objects.get_or_create(user=user)
+      user.last_login = datetime.now()
+      user.save()
       return Response({
         'token': token.key,
         'user_id': user.pk,
         'username': user.username,
-        'email': user.email
+        'email': user.email,
       })
     except User.DoesNotExist:
       return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
