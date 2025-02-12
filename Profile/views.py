@@ -1,7 +1,7 @@
-from rest_framework import status, permissions
+from rest_framework import status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
@@ -10,8 +10,11 @@ from .models import UserProfile
 from .serializers import UserProfileSerializer
 from django.contrib.auth.models import User
 from rest_framework.throttling import UserRateThrottle
+from .permissions import HasValidTokenPermission
 
-# API endpoint for authentication and creation  of users Profile
+
+
+# Login View
 class CustomAuthToken(ObtainAuthToken):
   throttle_classes = [UserRateThrottle]
 
@@ -40,8 +43,6 @@ class CustomAuthToken(ObtainAuthToken):
     except Exception as e:
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-# API endpoint for registering users
 class RegisterUser(APIView):
   permission_classes = [AllowAny]
 
@@ -70,3 +71,9 @@ class RegisterUser(APIView):
           'username': user.username,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
+  
+# Test bearer token
+@api_view(['GET'])
+@permission_classes([HasValidTokenPermission])
+def test(request):
+    return Response({"message": "Access granted"}, status=status.HTTP_200_OK)
