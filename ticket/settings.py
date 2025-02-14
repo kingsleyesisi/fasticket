@@ -83,6 +83,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://fasticket-react-w1x7.vercel.app',
     'http://localhost:8000',
     'https://fasticketss.vercel.app',
+    'http://localhost:5173'
 ]
 CORS_ALLOW_CREDENTIALS = True
 
