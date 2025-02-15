@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class Events(models.Model):
-    
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name="Events")
     title = models.CharField(max_length=255)
     description = models.TextField()
     banner = models.ImageField(upload_to="event_banners/")
