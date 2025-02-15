@@ -42,7 +42,7 @@ INSTALLED_APPS = [
 
     # Local apps
     'Profile',
-    # 'Event_Manager',
+    'Event_Manager',
     'payment',
 ]
 

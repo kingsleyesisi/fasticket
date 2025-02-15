@@ -29,7 +29,7 @@ class CustomAuthToken(ObtainAuthToken):
         user = User.objects.get(username=username_or_email)
 
       if not user.check_password(password):
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
 
       token, created = Token.objects.get_or_create(user=user)
       user.last_login = datetime.now()
@@ -41,7 +41,7 @@ class CustomAuthToken(ObtainAuthToken):
         'email': user.email,
       })
     except User.DoesNotExist:
-      return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+      return Response({'error': 'User Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
