@@ -8,10 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
 from .models import UserProfile
 from .serializers import UserProfileSerializer
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, update_last_login
 from rest_framework.throttling import UserRateThrottle
 from .permissions import HasValidTokenPermission
-from datetime import datetime
+from django.utils.timezone import now
 
 
 # Login View
@@ -22,27 +22,30 @@ class CustomAuthToken(ObtainAuthToken):
     try:
       username_or_email = request.data.get('username') or request.data.get('email')
       password = request.data.get('password')
+      
+      user = User.objects.filter(email=username_or_email).first() if '@' in username_or_email else User.objects.filter(username=username_or_email).first()
+      if user:
+        if not user.check_password(password):
+          print("Incorrect Password")
+          return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
 
-      if '@' in username_or_email:
-        user = User.objects.get(email=username_or_email)
+        token, created = Token.objects.get_or_create(user=user)
+        user.last_login = now()
+        user.save(update_fields=["last_login"])
+        print(f'logged in successful {user.username}')  # Log to Terminal for debugging
+        return Response({
+          'token': token.key,
+          'user_id': user.pk,
+          'username': user.username,
+          'email': user.email,
+        })
       else:
-        user = User.objects.get(username=username_or_email)
-
-      if not user.check_password(password):
-        return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
-
-      token, created = Token.objects.get_or_create(user=user)
-      user.last_login = datetime.now()
-      user.save()
-      return Response({
-        'token': token.key,
-        'user_id': user.pk,
-        'username': user.username,
-        'email': user.email,
-      })
+        print("User Does Not Exist") # Log to Terminal for debugging
+        return Response({'error': 'User Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
     except User.DoesNotExist:
       return Response({'error': 'User Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+      print(e)  # Log to Terminal for debugging
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RegisterUser(APIView):
@@ -59,21 +62,40 @@ class RegisterUser(APIView):
 
 
       if not username or not password or not email or not first_name or not last_name or not phone:
+          print('Error: fields required')  # Log to Terminal for debugging
           return Response({'error': 'Please provide all required fields'}, status=status.HTTP_400_BAD_REQUEST)
 
       if User.objects.filter(username=username).exists():
+          print("Error: user already exist")  # Log to Terminal for debugging
           return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
+      if User.objects.filter(email=email).exists():
+         print('Error: email already exist')  # Log to Terminal for debugging
+         return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
       user = User.objects.create_user(username=username, password=password, email=email, first_name=first_name, last_name=last_name)
       UserProfile.objects.create(user=user, phone=phone, company=company)
       token, created = Token.objects.get_or_create(user=user)
+      print(f'Registration successful:   {user.username}') # Log to Terminal for debugging
       return Response({
           'token': token.key,
           'user_id': user.pk,
           'username': user.username,
           'email': user.email
       }, status=status.HTTP_201_CREATED)
-  
+
+class UpdateProfile(APIView):
+  def put(self, request, *args, **kwargs):
+    user = request.user
+    data = request.data
+
+    user_profile = UserProfile.objects.get(user=user)
+    serializer = UserProfileSerializer(user_profile, data=data, partial=True)
+
+    if serializer.is_valid():
+      serializer.save()
+      return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 # Test bearer token
 @api_view(['GET'])
 @permission_classes([HasValidTokenPermission])
