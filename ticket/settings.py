@@ -184,3 +184,6 @@ REST_FRAMEWORK = {
 # Media Folder Settings
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
+
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
