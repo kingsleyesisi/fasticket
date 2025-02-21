@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class Events(models.Model):
-    # id = models.AutoField(primary_key=True)
+    # id = models.UUIDField(primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="events", blank=True, null=True)
     Hosts = models.CharField(blank=True, max_length=100)
     title = models.CharField(max_length=255)
@@ -13,8 +13,8 @@ class Events(models.Model):
     date = models.DateField()
     time = models.TimeField()
     location = models.CharField(max_length=255)
-    ticket_price = models.DecimalField(default=0.00, max_digits=10, decimal_places=2)
     capacity = models.PositiveIntegerField()
+    # ticket_price = models.DecimalField(default=0.00, max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.title

@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
@@ -8,31 +8,6 @@ from rest_framework.views import APIView
 from django.http import HttpResponse
 from .serializers import EventSerializer
 from .models import Events
-
-
-
-class CreateEventView(APIView):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-        
-    def get(self, request):
-        try:
-            if permission_classes:
-                return Response({'M':"it i authentiated"}, status=200)
-            else:
-                return HttpResponse("user")
-        except Exception as e:
-            return Response(e)
-    def post(self, request):
-        return HttpResponse('This is the post request')
-
-    def put(self, request):
-        return HttpResponse('This is a put request')
-        return HttpResponse('This is a put request')
-    
-    def delete(self, request):
-        return HttpResponse('this is a delete request')
-
 
 class CreateEvent(APIView):
     """
@@ -56,8 +31,6 @@ class CreateEvent(APIView):
                 {"message": "Event created successfully!", "data": serializer.data},
                 status=status.HTTP_201_CREATED
             )
-        print(serializer.errors)
-        print(type(user_pk))
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class GetEvent(APIView):
@@ -70,8 +43,28 @@ class GetEvent(APIView):
     def get(self, request, format=None):
         events = Events.objects.all()
         serializer = EventSerializer(events, many=True)
-        return Response(serializer.data)
+        data = {"status": "success", 
+                "data": serializer.data}
+        return Response(data)
+
+class UpdateEventView(APIView):
+    """
+    Update an existing event. Only authenticated users can update events.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+        event = get_object_or_404(Events, pk=pk)
+        serializer = EventSerializer(event, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Event updated successfully!", "data": serializer.data},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 def CreateView(request):
-    pass 
     return render(request, 'form.html', status=200)

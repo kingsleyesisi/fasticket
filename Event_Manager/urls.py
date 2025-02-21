@@ -5,6 +5,8 @@ from . import views
 urlpatterns = [
     # path('get', views.CreateEventView.as_view(), name='get'),
     path('create', views.CreateEvent.as_view(), name='create'),
-    path('view', views.CreateView, name='view'),
+    path('update/<int:pk>', views.UpdateEventView.as_view(), name='update'),
+    # path('delete', views.DeleteEvent.as_view(), name='delete'),
     path('get', views.GetEvent.as_view(), name='list'),
+    path('view', views.CreateView, name='view'),
 ]
