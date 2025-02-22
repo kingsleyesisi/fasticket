@@ -57,7 +57,9 @@ class UpdateEventView(APIView):
     def put(self, request, pk):
         event = get_object_or_404(Events, pk=pk)
         serializer = EventSerializer(event, data=request.data, partial=True)
-        
+        if request.user.pk != event.user.pk:
+            return Response({"message": "You do not have permission to update this event"})
+
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -72,11 +74,13 @@ class DeleteEvent(APIView):
     """
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-
     def delete(self, request, pk):
         event = get_object_or_404(Events, pk=pk)
+        if request.user.pk != event.user.pk:
+            return Response({"error": "You do not have permission to delete this event"}, status=status.HTTP_403_FORBIDDEN)
         event.delete()
         return Response({"message": "Event deleted successfully"}, status=status.HTTP_200_OK)
+
 class TicketViewSet(viewsets.ModelViewSet):
     authentication_classes = []
     permission_classes = [AllowAny]
