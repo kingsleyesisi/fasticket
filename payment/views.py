@@ -2,12 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .models import Payments
 from django.http import JsonResponse, HttpResponse
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import permission_classes
 from rest_framework import status 
 from rest_framework.response import Response  
 from .paystack import Paystack
 import json
 
 class InitializePaymentView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
                     email = request.data.get('email')
                     amount = request.data.get('amount')
@@ -30,6 +34,10 @@ class InitializePaymentView(APIView):
                     return JsonResponse({'error': 'Payment initialization failed'}, status=response.status_code)
 
 class CallBack(APIView):
+
+  authentication_classes = []
+  permission_classes = [AllowAny]
+  
   def get(self, request):
     trxref = request.GET.get('trxref')
     if not trxref:

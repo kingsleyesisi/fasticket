@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Event</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Note this file is just for debugging and testing the Event Creation -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             const form = document.querySelector("form");
             form.addEventListener("submit", function(event) {
                 event.preventDefault();
-                const token = "f61f9794341fe10f03e61f07fd877a2a45393bf0";
+                const token = "e99102ee835c3ae33d07ded623e8aeabc75844db";
                 const formData = new FormData(form);
                 fetch(form.action, {
                     method: form.method,
@@ -43,6 +45,13 @@
             <div>
                 <label for="Host" class="block text-sm font-medium text-gray-700">Event Host:</label>
                 <input type="text" id="Host" name="Host" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="is_paid" class="block text-sm font-medium text-gray-700">Event Type:</label>
+                <select id="free" name="is_paid" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="True">Paid</option>
+                    <option value="False">Free</option>
+                </select>
             </div>
 
             <div>
