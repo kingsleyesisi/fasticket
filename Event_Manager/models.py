@@ -43,4 +43,4 @@ class Tickets(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     
     def __str__(self):
-        return self.ticket_type
+        return f"{self.ticket_type} - {self.event} - {self.event.id}"
