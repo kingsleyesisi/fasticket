@@ -26,8 +26,6 @@ class CreateEvent(APIView):
                 except json.JSONDecodeError:
                     return Response({"error": "Invalid JSON for tickets."}, status=status.HTTP_400_BAD_REQUEST)
 
-        print('parsed data', data)
-
         serializer = EventSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -56,10 +54,11 @@ class GetParticularEvent(APIView):
     """
     Get a particular Event by Event ID
     
-eg:
-    Args: 03277548
-    returns: (info about that event)
+    Args: 
+        int: -> 8303 (EventID)
 
+    returns: 
+        dict: The information about a particular event
     """
 
     authentication_classes = []
@@ -106,54 +105,5 @@ class DeleteEvent(APIView):
         event.delete()
         return Response({"message": "Event deleted successfully"}, status=status.HTTP_200_OK)
 
-class TicketViewSet(viewsets.ModelViewSet):
-    authentication_classes = []
-    permission_classes = [AllowAny]
-
-    queryset = Tickets.objects.all()
-    serializer_class = TicketSerializer
-
-    def create(self, request, *args, **kwargs):
-        category_id = request.data.get("ticket_type")
-        pass
-#         quantity = int(request.data.get("quantity", 1))
-
-#         try:
-#             category = TicketCategories.objects.get(id=category_id)
-#             if category.available_tickets < quantity:
-#                 return Response({"error": "Not enough tickets available"}, status=status.HTTP_400_BAD_REQUEST)
-
-#             category.available_tickets -= quantity
-#             category.save()
-
-#             ticket = Tickets.objects.create(
-#                 event=category.event,
-#                 category=category,
-#                 quantity=quantity
-#             )
-#             return Response(TicketSerializer(ticket).data, status=status.HTTP_201_CREATED)
-#         except TicketCategories.DoesNotExist:
-#             return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
-
-
-
-class TicketCategoriesView(APIView):
-    
-    authentication_classes = []
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-            pass
-#         queryset = TicketCategories.objects.all()
-#         serializer = TicketCategoriesSerializer(queryset, many=True)
-#         return Response({"status": "success", "data": serializer.data})
-
-#     def post(self, request):
-#         serializer = TicketCategoriesSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({"status": "success", "data": serializer.data}, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
 def CreateView(request):
     return render(request, 'form.html', status=200)

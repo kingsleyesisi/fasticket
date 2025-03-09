@@ -9,6 +9,4 @@ urlpatterns = [
     path('getAll', views.GetEvent.as_view(), name='get_all'), # Get all events
     path('get/<int:pk>', views.GetParticularEvent.as_view(), name='get'),
     path('view', views.CreateView, name='view'),
-    path('ticket', views.TicketCategoriesView.as_view(), name='ticket'),
-    path('create_tick', views.TicketViewSet.as_view({'post': 'list'}), name='views')
 ]
