@@ -39,7 +39,7 @@ class Paystack:
 
 
       response = requests.post(initialization_url, headers=self.headers, json=data)
-
+      print(response)
       if response.status_code == 200:
           payment_data = response.json()
           payment_url = payment_data.get("data", {}).get("authorization_url")

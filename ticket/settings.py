@@ -9,6 +9,8 @@ env = Env()
 env.read_env(str(BASE_DIR / '.env'))
 
 # Initialize paystack secret key
+# PAYSTACK_SECRET_KEY = "sk_test_d4e6fc829afddaf9055dd37b84a6e1c7699ce7bc"
+# PAYSTACK_PUBLIC_KEY = "pk_test_7c70bdd43d4c8099aff119101329b4eb3e937d91"
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY')
 PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY')
 
@@ -18,6 +20,7 @@ SECRET_KEY = 'django-insecure-mx%5w1zkjb+_6(vm&fe*uqr%ohu^3(y$bch#a!$t_aq)hspkjc
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
+# DEBUG = env('DEBUG')
 
 # During production Trust Origin and Allowed Host should be set
 ALLOWED_HOSTS = ['*']
