@@ -19,6 +19,7 @@ desktop.ini
 # Ignore environment variable files
 .venv/
 .env
+env/
 .env.local
 
 # Ignore IDE specific files
