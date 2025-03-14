@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'Profile',
     'Event_Manager',
     'payment',
+    'event',
 ]
 
 MIDDLEWARE = [
@@ -62,7 +63,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'ticket.urls'
 
-
+MAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-email-password'  # Use an App Password if using Gmail
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # NOTE this is not recommended for production just for debugging and testing during development
@@ -174,13 +181,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
+        # 'rest_framework.permissions.IsAuthenticated',  # This Ensures that only authenticated users can access the API
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ],
-    
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',  # This Ensures that only authenticated users can access the API
     ],
 }
 
