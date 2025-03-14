@@ -34,12 +34,15 @@ class Paystack:
          "email": email,
           "amount": amount,
           "Currency": "NGN",
-          "callback_url": f'http://{domain}/payments/verify_payment'
+          "callback_url": f'http://{domain}/payments/verify_payment' # Change during production 
           }
 
 
       response = requests.post(initialization_url, headers=self.headers, json=data)
-      print(response)
+    #   print(response.text)
+      message = response.json().get('message')
+
+    #   print(message)
       if response.status_code == 200:
           payment_data = response.json()
           payment_url = payment_data.get("data", {}).get("authorization_url")
@@ -54,8 +57,9 @@ class Paystack:
                   {"error": "Payment URL not found"}, status=400
               )
       else:
-          return JsonResponse(
-              {"error": "Payment initialization failed"}, status=400
+        message = response.json().get('message')
+        return JsonResponse(
+              {"error": message}, status=400
           )
     
 

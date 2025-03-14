@@ -8,7 +8,7 @@ class Payments(models.Model):
     amount = models.FloatField()
     reference = models.CharField(max_length=255, unique=False)
     email = models.EmailField()
-    eventID = models.CharField(max_length=200, blank=True, null=True)
+    eventID = models.CharField(max_length=50, blank=True)
     Verified = models.BooleanField(default=False)
     paid_at = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -18,7 +18,7 @@ class Payments(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.email} paid {self.amount}"
+        return f"{self.email} paid {self.amount} - {self.eventID}"
 
     def save(self, *args, **kwargs):
         paystack = Paystack()

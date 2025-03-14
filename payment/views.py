@@ -13,25 +13,25 @@ class InitializePaymentView(APIView):
     authentication_classes = []
     permission_classes = [AllowAny]
     def post(self, request, *args, **kwargs):
+                    name = request.data.get('name')
                     email = request.data.get('email')
                     amount = request.data.get('amount')
                     eventID = request.data.get('eventID')
-
                     if not email or not amount:
                             return Response({'error': 'Please provide both email and amount'}, status=status.HTTP_400_BAD_REQUEST)
                     else:
                             paystack = Paystack()
                             response = paystack.Pay(email, amount, eventID, request=request)
 
-                    if response.status_code == 302 or 200:
+                    if response.status_code == 200:
                             response_data = dict(json.loads(response.content.decode('utf-8')))
                             data = response_data['payment_data']['data']
                             reference = data['reference']
-                            store_reference = Payments.objects.create(reference=reference, amount=amount, email=email)
+                            store_reference = Payments.objects.create(reference=reference, amount=amount, email=email, name=name, eventID=eventID)
                             print(f'This is the reference {store_reference}')
                             return JsonResponse(data, status=200)
-
-                    return JsonResponse({'error': 'Payment initialization failed'}, status=response.status_code)
+                    message = dict(json.loads(response.content.decode('utf-8')))
+                    return JsonResponse({'error': message['error']}, status=response.status_code)
 
 class CallBack(APIView):
 
@@ -56,7 +56,11 @@ class CallBack(APIView):
       reason = status
       return JsonResponse(reason, status=400)  
 
+
+# Just for debugging
 class ListPaymentsView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
     def get(self, request, *args, **kwargs):
         payments = Payments.objects.all()
         payments_list = [
