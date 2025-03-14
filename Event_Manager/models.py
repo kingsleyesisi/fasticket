@@ -11,7 +11,7 @@ def generate_unique_event_id():
     that isn’t already used as an event ID.
     """
     while True:
-        new_id = ''.join(random.choices('0123456789', k=4))
+        new_id = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', k=8))
 
         if not Events.objects.filter(id=new_id).exists():
             return new_id
@@ -33,6 +33,7 @@ class Events(models.Model):
     location = models.CharField(max_length=255)
     capacity = models.PositiveIntegerField()
     is_paid = models.BooleanField(default=False)
+    # date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
