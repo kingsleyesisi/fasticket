@@ -14,6 +14,7 @@ from .permissions import HasValidTokenPermission
 from django.utils.timezone import now
 import random
 from django.core.mail import send_mail
+from datetime import timedelta
 
 # Login View
 class CustomAuthToken(ObtainAuthToken):
@@ -31,6 +32,13 @@ class CustomAuthToken(ObtainAuthToken):
           return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
 
         token, created = Token.objects.get_or_create(user=user)
+        
+        # This check and delete any token older than 2 hours 
+        if token.created < now() - timedelta(hours=6):
+           token.delete()
+           token = Token.objects.create(user=user)
+           print(token)
+
         user.last_login = now()
         user.save(update_fields=["last_login"])
         print(f'logged in successful {user.username}')  # Log to Terminal for debugging
@@ -112,41 +120,83 @@ class RequestOTPView(APIView):
             PasswordResetOTP.objects.create(user=user, otp=otp)
 
             # Send OTP via email
+            subject = "Fasticket - Reset Password OTP"
+            body = f"""
+                  <html>
+                    <head>
+                      <style>
+                        body{{
+                          font-family: Arial, sans-serif;
+                        }}
+                        h2 {{
+                          color: #007bff;   
+                        }}
+                        b{{
+                          background-color: #1b1a1a;
+                          color: #ffffff;
+                          padding: 10px 20px;
+                          border: none;
+                          border-radius: 5px;
+                        }}
+                        em{{
+                          color: red;
+                          margin-top: 100px;
+                        }}
+                        
+                      </style>
+                    </head>
+
+                    <body>
+                      <h2>Password Reset OTP</h2>
+                      <p> Your OTP for password reset is <b> {otp}.</b> It expires in 5 minutes.</p>
+                    
+                    <p><em>If you did not request this OTP, please ignore this email. </em></p>
+                    </body>
+                  </html>
+                    """
             send_mail(
-                "Password Reset OTP",
-                f"Your OTP for password reset is {otp}. It expires in 5 minutes.",
-                "no-reply@example.com",
-                [user.email],
+                subject=subject,
+                message=body, #f"Your OTP for password reset is {otp}. It expires in 5 minutes."
+                from_email="no-reply@example.com", # Change during production
+                recipient_list=[user.email],
                 fail_silently=False,
+                html_message=body
             )
 
             return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOTPView(APIView):
-    def post(self, request):
-        serializer = VerifyOTPSerializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            otp = serializer.validated_data['otp']
-            new_password = serializer.validated_data['new_password']
+  def post(self, request):
+    serializer = VerifyOTPSerializer(data=request.data)
+    if serializer.is_valid():
+      email = serializer.validated_data['email']
+      otp = serializer.validated_data['otp']
+      new_password = serializer.validated_data['new_password']
 
-            user = User.objects.filter(email=email).first()
-            if not user:
-                return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
+      user = User.objects.filter(email=email).first()
+      if not user:
+        return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
 
-            otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
-            if not otp_record or not otp_record.is_valid():
-                return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
+      otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
+      if not otp_record or not otp_record.is_valid():
+        return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Reset password
-            user.set_password(new_password)
-            user.save()
-            otp_record.delete()  # Remove OTP after use
+      # Reset password
+      user.set_password(new_password)
+      user.save()
+      otp_record.delete()  # Remove OTP after use
 
-            return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+      # Change the token after the password has been changed
+      Token.objects.filter(user=user).delete()
+      new_token, created = Token.objects.get_or_create(user=user)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+      return Response({
+        "message": "Password reset successful",
+        "token": new_token.key
+      }, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
