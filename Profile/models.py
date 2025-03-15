@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
-import uuid
+import random
+import datetime
 
 # Userprofile Model
 class UserProfile(models.Model):
@@ -11,6 +12,7 @@ class UserProfile(models.Model):
     company = models.CharField(max_length=100, null=True, blank=True)
     phone = models.CharField(max_length=100, null=False, blank=False)
     email = models.EmailField(max_length=100, null=False, blank=False)
+    location = models.CharField(max_length=100, null=False, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -22,3 +24,11 @@ class UserProfile(models.Model):
     
     def get_short_name(self):
         return self.user.first_name
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        return (datetime.datetime.now(datetime.timezone.utc) - self.created_at).seconds < 300  # 5 minutes validity

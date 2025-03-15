@@ -6,13 +6,14 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from .models import UserProfile
-from .serializers import UserProfileSerializer
-from django.contrib.auth.models import User, update_last_login
+from .models import UserProfile, PasswordResetOTP
+from .serializers import UserProfileSerializer, RequestOTPSerializer, VerifyOTPSerializer
+from django.contrib.auth.models import User
 from rest_framework.throttling import UserRateThrottle
 from .permissions import HasValidTokenPermission
 from django.utils.timezone import now
-
+import random
+from django.core.mail import send_mail
 
 # Login View
 class CustomAuthToken(ObtainAuthToken):
@@ -20,7 +21,7 @@ class CustomAuthToken(ObtainAuthToken):
 
   def post(self, request, *args, **kwargs):
     try:
-      username_or_email = request.data.get('username') or request.data.get('email')
+      username_or_email = request.data.get('username') or request.data.get('email').lower()
       password = request.data.get('password')
       
       user = User.objects.filter(email=username_or_email).first() if '@' in username_or_email else User.objects.filter(username=username_or_email).first()
@@ -59,6 +60,7 @@ class RegisterUser(APIView):
       last_name = request.data.get('last_name')
       phone = request.data.get('phone')
       company = request.data.get('company')
+      location = request.data.get('location')
 
 
       if not username or not password or not email or not first_name or not last_name or not phone:
@@ -73,7 +75,7 @@ class RegisterUser(APIView):
          return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
       user = User.objects.create_user(username=username, password=password, email=email, first_name=first_name, last_name=last_name)
-      UserProfile.objects.create(user=user, phone=phone, company=company)
+      UserProfile.objects.create(user=user, phone=phone, company=company, location=location)
       token, created = Token.objects.get_or_create(user=user)
       print(f'Registration successful:   {user.username}') # Log to Terminal for debugging
       return Response({
@@ -95,6 +97,58 @@ class UpdateProfile(APIView):
       serializer.save()
       return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class RequestOTPView(APIView):
+    def post(self, request):
+        serializer = RequestOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.filter(email=email).first()
+
+            if not user:
+                return Response({"error": "User with this email does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+            otp = f"{random.randint(100000, 999999)}"
+            PasswordResetOTP.objects.create(user=user, otp=otp)
+
+            # Send OTP via email
+            send_mail(
+                "Password Reset OTP",
+                f"Your OTP for password reset is {otp}. It expires in 5 minutes.",
+                "no-reply@example.com",
+                [user.email],
+                fail_silently=False,
+            )
+
+            return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyOTPView(APIView):
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            new_password = serializer.validated_data['new_password']
+
+            user = User.objects.filter(email=email).first()
+            if not user:
+                return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
+
+            otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
+            if not otp_record or not otp_record.is_valid():
+                return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Reset password
+            user.set_password(new_password)
+            user.save()
+            otp_record.delete()  # Remove OTP after use
+
+            return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 # Test bearer token
 @api_view(['GET'])
