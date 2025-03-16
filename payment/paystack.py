@@ -19,8 +19,7 @@ class Paystack:
     def Pay(self, email, amount, eventID, **kwargs):
       """
       Initialize the payment
-      Args:
-        Email, A
+        
       """
       email = email
       amount = amount * 100 # convert from kobo to Naira

@@ -1,106 +1,144 @@
-# Fasticket
+# Fasticket: Event Management Platform 🚀
 
-Fasticket is a ticketing system built with Django REST Framework (DRF).
+## Description
 
-## Table of Contents
+Fasticket is a comprehensive platform designed to streamline event management, from creation to ticket sales. Whether you're organizing a small meetup or a large conference, Fasticket provides the tools you need to manage events efficiently. Our platform offers features for user authentication, event creation, payment processing, and much more, all built with Django and a RESTful API.
 
-- [Features](#features)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [API Documentation](#api-documentation)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+## Key Features 🌟
 
-## Features
+*   **User Authentication**: Secure user registration, login, and profile management.
+*   **Event Creation & Management**: Easily create, update, and delete events with detailed information like date, time, location, and capacity.
+*   **Ticket Management**: Define multiple ticket types and manage their availability and pricing.
+*   **Payment Integration**: Seamless payment processing via Paystack for secure ticket purchases.
+*   **RESTful API**: A powerful API for managing events and tickets programmatically.
+*   **Email Verification:** Sends email to newly registered user
+*   **Password Reset:** Sends an OTP to registered user to reset password
 
-- User authentication and authorization
-- Event creation and management
-- Support for multiple ticket statuses
-- RESTful API for ticket operations
-- Detailed event and ticket information
-- User-friendly interface
+## Installation 🔧
 
-## Installation
+Follow these steps to get Fasticket up and running on your local machine:
 
-To get started with Fasticket, follow these steps:
+1.  **Clone the repository:**
 
-1. **Clone the repository:**
     ```bash
-    git clone https://github.com/kingsleyesisi/fasticket.git
-    cd fasticket
+    git clone <repository_url>
+    cd <repository_directory>
     ```
 
-2. **Create a virtual environment and activate it:**
+2.  **Create a virtual environment:**
+
     ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+    python -m venv .venv
     ```
 
-3. **Install the dependencies:**
+3.  **Activate the virtual environment:**
+
+    *   On Windows:
+
+        ```bash
+        .venv\Scripts\activate
+        ```
+
+    *   On macOS and Linux:
+
+        ```bash
+        source .venv/bin/activate
+        ```
+
+4.  **Install dependencies:**
+
     ```bash
     pip install -r requirements.txt
     ```
 
-4. **Run the migration and start the development server:**
+5.  **Configure environment variables:**
+
+    *   Create a `.env` file in the project root directory.
+    *   Add the following environment variables:
+
+        ```
+        DEBUG=True
+        PAYSTACK_SECRET_KEY=<your_paystack_secret_key>
+        PAYSTACK_PUBLIC_KEY=<your_paystack_public_key>
+        EMAIL_HOST=<your_email_host>
+        EMAIL_PORT=<your_email_port>
+        EMAIL_USE_TLS=<True/False>
+        EMAIL_HOST_USER=<your_email_host_user>
+        EMAIL_HOST_PASSWORD=<your_email_host_password>
+        ```
+
+6.  **Apply migrations:**
+
     ```bash
     python manage.py makemigrations
     python manage.py migrate
+    ```
+
+7.  **Create a superuser (optional):**
+
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+8.  **Run the server:**
+
+    ```bash
     python manage.py runserver
     ```
 
-## Configuration
+## Usage 💻
 
-Configure the application by setting the necessary environment variables in a `.env` file in the root directory. 
-Example:
-   SECRET_KEY=your_secret_key
-   DEBUG=True
-   PAYSTACK_SECRET=sk_12345678
+1.  **Access the API:**
 
+    *   The API endpoints are available at `http://localhost:8000/`.
+    *   Use tools like Postman or `curl` to interact with the API or any API testing tools of your choice.
 
-## API Documentation
+2.  **User Authentication:**
 
-The Fasticket API provides endpoints for managing events and tickets. Below are some of the main endpoints:
+    *   **Register:** `POST /auth/register/initiate` and `POST /auth/register/confirm` to create a new user.
+    *   **Login:** `POST /auth/login` to obtain an authentication token.
+    *   Include the token in the `Authorization` header for protected endpoints.
 
-- **User Registration and Authentication**
-    - `POST /api/register/` - Register a new user
-    - `POST /api/login/` - Login a user
-    - `POST /api/logout/` - Logout a user
+3.  **Event Management:**
 
-- **Event Management**
-    - `GET /api/events/` - List all events
-    - `POST /api/events/` - Create a new event
-    - `GET /api/events/:id/` - Retrieve a specific event
-    - `PUT /api/events/:id/` - Update an event
-    - `DELETE /api/events/:id/` - Delete an event
+    *   **Create Event:** `POST /events/create` to create a new event.
+    *   **Get All Events:** `GET /events/getAll` to retrieve all events.
+    *   **Get Event:** `GET /events/get/<pk>` to retrieve a specific event by ID.
+    *   **Update Event:** `PUT /events/update/<pk>` to update an existing event.
+    *   **Delete Event:** `DELETE /events/delete/<pk>` to delete an event.
 
-- **Ticket Management**
-    - `GET /api/tickets/` - List all tickets
-    - `POST /api/tickets/` - Create a new ticket
-    - `GET /api/tickets/:id/` - Retrieve a specific ticket
-    - `PUT /api/tickets/:id/` - Update a ticket
-    - `DELETE /api/tickets/:id/` - Delete a ticket
+4.  **Payment:**
 
-## Usage
+    *   **Initiate Payment:** `POST /payments/initiate_payment/` to initiate payment.
+    *   **Verify Payment:** Configure the callback URL to `payments/verify_payment/` to verify payment.
+5.  **View Form:**
 
-After setting up the project, you can access the application at `http://127.0.0.1:8000/`. Use the provided API endpoints to interact with the system.
+     *   **Create Event**: `GET /events/view` To view the form for testing purposes
 
-## Project Structure
+## Contributing 🤝
 
-Here is an overview of the project structure:
-   fasticket/ ├── fasticket/ │ ├── init.py │ ├── settings.py │ ├── urls.py │ ├── wsgi.py ├── events/ │ ├── init.py │ ├── admin.py │ ├── apps.py │ ├── models.py │ ├── serializers.py │ ├── urls.py │ ├── views.py ├── tickets/ │ ├── init.py │ ├── admin.py │ ├── apps.py │ ├── models.py │ ├── serializers.py │ ├── urls.py │ ├── views.py ├── manage.py └── requirements.txt
+We welcome contributions to Fasticket! Here's how you can contribute:
 
-## Contributing
+1.  **Fork the repository.**
+2.  **Create a new branch:**
 
-Contributions are welcome! Please follow these steps to contribute:
+    ```bash
+    git checkout -b feature/your-feature
+    ```
 
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Create a new Pull Request
+3.  **Make your changes and commit them:**
+
+    ```bash
+    git add .
+    git commit -m "Add your descriptive commit message"
+    ```
+
+4.  **Push to the branch:**
+
+    ```bash
+    git push origin feature/your-feature
+    ```
+
+5.  **Submit a pull request.**
 
 ## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

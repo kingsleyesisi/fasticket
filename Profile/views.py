@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from .models import UserProfile, PasswordResetOTP
+from .models import UserProfile, PasswordResetOTP, RegistrationOTP
 from .serializers import UserProfileSerializer, RequestOTPSerializer, VerifyOTPSerializer
 from django.contrib.auth.models import User
 from rest_framework.throttling import UserRateThrottle
@@ -57,40 +57,142 @@ class CustomAuthToken(ObtainAuthToken):
       print(e)  # Log to Terminal for debugging
       return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+# Registration OTP
+class InitiateRegistration(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        email = request.data.get('email')
+        first_name = request.data.get('first_name')
+        last_name = request.data.get('last_name')
+        phone = request.data.get('phone')
+        company = request.data.get('company')
+        location = request.data.get('location')
+
+        if not all([username, password, email, first_name, last_name, phone]):
+            return Response(
+                {'error': 'Please provide all required fields'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+        otp = f"{random.randint(100000, 999999)}"
+
+        RegistrationOTP.objects.create(
+            username=username,
+            password=password,  # Plaintext for demo
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            phone=phone,
+            company=company or "",
+            location=location or "",
+            otp=otp
+        )
+
+        # Send OTP via email (Note that a well structured email with proper styling should be created)
+        body = f"""
+                  <html>
+                    <head>
+                      <style>
+                        body{{
+                          font-family: Arial, sans-serif;
+                        }}
+                        h2 {{
+                          color: #007bff;   
+                        }}
+                        b{{
+                          background-color: #1b1a1a;
+                          color: #ffffff;
+                          padding: 10px 20px;
+                          border: none;
+                          border-radius: 5px;
+                        }}
+                        em{{
+                          color: red;
+                          margin-top: 100px;
+                        }}
+                        
+                      </style>
+                    </head>
+
+                    <body>
+                      <h2>Registration OTP</h2>
+                      <p> Your Comfirmation OTP is <b> {otp}.</b> It expires in 30 minutes.</p>
+                    
+                    <p><em>If you did not request this OTP, please ignore this email. </em></p>
+                    </body>
+                  </html>
+                    """
+        send_mail(
+            subject="Your Registration OTP",
+            message=body,
+            from_email='noreplay@domain.com',
+            recipient_list=[email],
+            fail_silently=False,
+            html_message=body
+        )
+
+        return Response(
+            {"message": "OTP sent to your email. Please verify to complete registration."},
+            status=status.HTTP_200_OK
+        )
+
 class RegisterUser(APIView):
   permission_classes = [AllowAny]
 
   def post(self, request, *args, **kwargs):
-      username = request.data.get('username')
-      password = request.data.get('password')
       email = request.data.get('email')
-      first_name = request.data.get('first_name')
-      last_name = request.data.get('last_name')
-      phone = request.data.get('phone')
-      company = request.data.get('company')
-      location = request.data.get('location')
+      otp = request.data.get('otp')
 
+      if not email or not otp: 
+         return Response({'error': 'Please provide both email and OTP'}, status=status.HTTP_400_BAD_REQUEST)
+      
+      # Retrive the pending registration 
 
-      if not username or not password or not email or not first_name or not last_name or not phone:
-          print('Error: fields required')  # Log to Terminal for debugging
-          return Response({'error': 'Please provide all required fields'}, status=status.HTTP_400_BAD_REQUEST)
+      try:
+         pending_registration = RegistrationOTP.objects.get(email=email, otp=otp)
+  
+      except RegistrationOTP.DoesNotExist:
+        return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
+      
+      # Check if the OTP is still valid 
+      if not pending_registration.is_valid():
+        return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+      
+      # Create the real user 
+      user = User.objects.create_user(
+          username=pending_registration.username,
+          password=pending_registration.password,
+          email=pending_registration.email,
+          first_name=pending_registration.first_name,
+          last_name=pending_registration.last_name
+      )
 
-      if User.objects.filter(username=username).exists():
-          print("Error: user already exist")  # Log to Terminal for debugging
-          return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
-      if User.objects.filter(email=email).exists():
-         print('Error: email already exist')  # Log to Terminal for debugging
-         return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+      UserProfile.objects.create(
+          user=user,
+          phone=pending_registration.phone,
+          company=pending_registration.company,
+          location=pending_registration.location
+      )
 
-      user = User.objects.create_user(username=username, password=password, email=email, first_name=first_name, last_name=last_name)
-      UserProfile.objects.create(user=user, phone=phone, company=company, location=location)
+      # Generate a new token for the user
       token, created = Token.objects.get_or_create(user=user)
-      print(f'Registration successful:   {user.username}') # Log to Terminal for debugging
+
+      pending_registration.delete()
+
       return Response({
-          'token': token.key,
-          'user_id': user.pk,
-          'username': user.username,
-          'email': user.email
+         "message": "Registration successful",
+         "token": token.key,
+         "user_id": user.pk,
+          "username": user.username,
+          "email": user.email
       }, status=status.HTTP_201_CREATED)
 
 class UpdateProfile(APIView):
@@ -148,7 +250,7 @@ class RequestOTPView(APIView):
 
                     <body>
                       <h2>Password Reset OTP</h2>
-                      <p> Your OTP for password reset is <b> {otp}.</b> It expires in 5 minutes.</p>
+                      <p> Your OTP for password reset is <b> {otp}.</b> It expires in 30 minutes.</p>
                     
                     <p><em>If you did not request this OTP, please ignore this email. </em></p>
                     </body>
@@ -156,7 +258,7 @@ class RequestOTPView(APIView):
                     """
             send_mail(
                 subject=subject,
-                message=body, #f"Your OTP for password reset is {otp}. It expires in 5 minutes."
+                message=body,
                 from_email="no-reply@example.com", # Change during production
                 recipient_list=[user.email],
                 fail_silently=False,

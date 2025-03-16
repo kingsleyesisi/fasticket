@@ -60,9 +60,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+FRONTEND_URL = "http://localhost:3000"  # Change this to your frontend URL
+
 ROOT_URLCONF = 'ticket.urls'
 
-
+MAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = env('EMAIL_HOST')
+EMAIL_PORT = env('EMAIL_PORT')
+EMAIL_USE_TLS = env('EMAIL_USE_TLS')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')  # Use an App Password if using Gmail
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 # NOTE this is not recommended for production just for debugging and testing during development
@@ -182,7 +190,15 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',  # This Ensures that only authenticated users can access the API
     ],
+    'DEFAULT_THROTTLE_RATES': {
+    'user': '5/min'  # Limit users to 5 requests per minute
+    }
 }
+
+REST_FRAMEWORK = {
+
+}
+
 
 # Media Folder Settings
 MEDIA_ROOT = BASE_DIR / 'media'
