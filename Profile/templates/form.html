@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Event</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
+    <div     id="google_translate_element"></div>
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+                {pageLanguage: 'ar'},
+                'google_translate_element'
+            );
+        }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <!-- Note this file is just for debugging and testing the Event Creation -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -34,7 +43,9 @@
         });
     </script>
 </head>
+
 <body class="bg-gray-100 p-6 flex items-center justify-center min-h-screen">
+    
     <div class="w-full max-w-lg bg-white p-8 rounded-lg shadow-md">
         <h1 class="text-2xl font-bold mb-6 text-center">Create Event</h1>
         <form action="/events/create" method="post" class="space-y-4">
@@ -87,5 +98,18 @@
             </div>
         </form>
     </div>
+    <!-- <script src="//code.tidio.co/om7yqyhgqiuzg1dvdn165ixwdz9qwrmo.js" async></script> -->
+<!-- Smartsupp Live Chat script -->
+<script type="text/javascript">
+    var _smartsupp = _smartsupp || {};
+    _smartsupp.key = 'd1f5f5a15997e673174e653d52040e12a3651a08';
+    window.smartsupp||(function(d) {
+      var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
+      s=d.getElementsByTagName('script')[0];c=d.createElement('script');
+      c.type='text/javascript';c.charset='utf-8';c.async=true;
+      c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
+    })(document);
+    </script>
+
 </body>
 </html>
