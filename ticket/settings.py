@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'Profile',
     'Event_Manager',
     'payment',
+    'event',
 ]
 
 MIDDLEWARE = [
@@ -182,6 +183,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
+        # 'rest_framework.permissions.IsAuthenticated',  # This Ensures that only authenticated users can access the API
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
