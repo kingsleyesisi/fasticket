@@ -59,6 +59,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Ensure WhiteNoise is listed here
+
 ]
 
 FRONTEND_URL = "http://localhost:3000"  # Change this to your frontend URL
@@ -201,6 +203,8 @@ REST_FRAMEWORK = {
 
 }
 
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media Folder Settings
 MEDIA_ROOT = BASE_DIR / 'media'

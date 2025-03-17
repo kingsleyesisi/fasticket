@@ -86,7 +86,7 @@ class InitiateRegistration(APIView):
 
         RegistrationOTP.objects.create(
             username=username,
-            password=password,  # Plaintext for demo
+            password=password,  # Plaintext for demo NOTE: hash password in production
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -154,15 +154,12 @@ class RegisterUser(APIView):
       if not email or not otp: 
          return Response({'error': 'Please provide both email and OTP'}, status=status.HTTP_400_BAD_REQUEST)
       
-      # Retrive the pending registration 
-
       try:
          pending_registration = RegistrationOTP.objects.get(email=email, otp=otp)
   
       except RegistrationOTP.DoesNotExist:
         return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
       
-      # Check if the OTP is still valid 
       if not pending_registration.is_valid():
         return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
       
@@ -208,7 +205,7 @@ class UpdateProfile(APIView):
       return Response(serializer.data, status=status.HTTP_200_OK)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class RequestOTPView(APIView):
+class ResetPassword(APIView):
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
         if serializer.is_valid():
@@ -289,7 +286,6 @@ class VerifyOTPView(APIView):
       user.save()
       otp_record.delete()  # Remove OTP after use
 
-      # Change the token after the password has been changed
       Token.objects.filter(user=user).delete()
       new_token, created = Token.objects.get_or_create(user=user)
 
@@ -302,7 +298,7 @@ class VerifyOTPView(APIView):
 
 
 
-# Test bearer token
+# Test bearer token (for Debugging)
 @api_view(['GET'])
 @permission_classes([HasValidTokenPermission])
 def test(request):
