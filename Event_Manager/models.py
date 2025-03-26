@@ -24,7 +24,7 @@ class Events(models.Model):
         default=generate_unique_event_id,
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="events", blank=True, null=True)
-    Hosts = models.CharField(blank=True, max_length=200)
+    # hosts = models.JSONField(blank=True, default=list)
     title = models.CharField(max_length=255)
     description = models.TextField()
     banner = models.ImageField(upload_to="event_banners/", blank=True)
@@ -37,6 +37,19 @@ class Events(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class Hosts(models.Model):
+    event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name="hosts")
+    name = models.CharField(max_length=100)
+    email = models.EmailField(blank=True)
+    role = models.CharField(max_length=100)
+    social_media = models.URLField(blank=True)
+    phone = models.CharField(max_length=15, blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.role} - {self.event.title}"
+    
 class Tickets(models.Model):
     event = models.ForeignKey(Events, on_delete=models.CASCADE, related_name="tickets")
     ticket_type = models.CharField(max_length=200)

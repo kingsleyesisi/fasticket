@@ -10,6 +10,7 @@ from .serializers import EventSerializer, TicketSerializer
 from .models import Events, Tickets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 import json
+
 class CreateEvent(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -25,7 +26,15 @@ class CreateEvent(APIView):
                     data['tickets'] = json.loads(data['tickets'])
                 except json.JSONDecodeError:
                     return Response({"error": "Invalid JSON for tickets."}, status=status.HTTP_400_BAD_REQUEST)
-
+                
+        if 'hosts' in data and isinstance(data['hosts'], (str, list)):
+            if isinstance(data['hosts'], str):
+                try:
+                    data['hosts'] = json.loads(data['hosts'])
+                    print(data['hosts'])
+                except json.JSONDecodeError:    
+                    return Response({'error': "Invalid Json for Host"}, status=status.HTTP_400_BAD_REQUEST)
+                
         serializer = EventSerializer(data=data)
         if serializer.is_valid():
             serializer.save()

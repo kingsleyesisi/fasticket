@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Events, Tickets #, TicketCategories
+from .models import Events, Tickets, Hosts #, TicketCategories
 from rest_framework import serializers
 
 class TicketSerializer(serializers.ModelSerializer):
@@ -7,8 +7,15 @@ class TicketSerializer(serializers.ModelSerializer):
         model = Tickets
         fields = ('ticket_type', 'price', 'quantity')
         # fields = '__all__'
+
+class HostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hosts
+        fields = ('role', 'name', 'email', 'social_media')
+
 class EventSerializer(serializers.ModelSerializer):
     tickets = TicketSerializer(many=True, required=False)
+    hosts = HostSerializer(many=True, required=False)
 
     class Meta:
         model = Events
@@ -37,15 +44,22 @@ class EventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Paid events must include at least one ticket.")
 
         attrs['tickets'] = tickets
+        attrs['hosts'] = self.initial_data.get('hosts')
         return attrs
 
     def create(self, validated_data):
         tickets_data = validated_data.pop('tickets', [])  # Extract ticket
+        host_data = validated_data.pop('hosts', [])  # Extract host if present
         event = Events.objects.create(**validated_data)
 
         # Create ticket  for the event if it is paid
         if event.is_paid:
             for ticket in tickets_data:
                 Tickets.objects.create(event=event, **ticket)
-
+        
+        # Assign host to the event if provided
+        if host_data:
+            for host in host_data:
+                Hosts.objects.create(event=event, **host)
+                
         return event

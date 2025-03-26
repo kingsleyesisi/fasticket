@@ -72,14 +72,17 @@ class InitiateRegistration(APIView):
         location = request.data.get('location')
 
         if not all([username, password, email, first_name, last_name, phone]):
+            print('all field required') # for deugging 
             return Response(
                 {'error': 'Please provide all required fields'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if User.objects.filter(username=username).exists():
+            print('Username already Exist') # for debuging
             return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=email).exists():
+            print('email Aready exist') # for debugging
             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = f"{random.randint(100000, 999999)}"
@@ -152,12 +155,14 @@ class RegisterUser(APIView):
       otp = request.data.get('otp')
 
       if not email or not otp: 
+         print('Please provid email and OTP') # Debug
          return Response({'error': 'Please provide both email and OTP'}, status=status.HTTP_400_BAD_REQUEST)
       
       try:
          pending_registration = RegistrationOTP.objects.get(email=email, otp=otp)
   
       except RegistrationOTP.DoesNotExist:
+        print('Invalid OTP')
         return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
       
       if not pending_registration.is_valid():
@@ -213,6 +218,7 @@ class ResetPassword(APIView):
             user = User.objects.filter(email=email).first()
 
             if not user:
+                print('User with email does not exists') # for debuggig
                 return Response({"error": "User with this email does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
             otp = f"{random.randint(100000, 999999)}"
@@ -266,6 +272,7 @@ class ResetPassword(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOTPView(APIView):
+  """ Vaidate OTP for reset Password"""
   def post(self, request):
     serializer = VerifyOTPSerializer(data=request.data)
     if serializer.is_valid():
@@ -275,6 +282,7 @@ class VerifyOTPView(APIView):
 
       user = User.objects.filter(email=email).first()
       if not user:
+        print('Invalid Email')
         return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
 
       otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
