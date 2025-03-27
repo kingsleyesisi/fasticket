@@ -13,8 +13,9 @@ from rest_framework.throttling import UserRateThrottle
 from .permissions import HasValidTokenPermission
 from django.utils.timezone import now
 import random
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from datetime import timedelta
+from django.template.loader import render_to_string
 
 # Login View
 class CustomAuthToken(ObtainAuthToken):
@@ -98,50 +99,14 @@ class InitiateRegistration(APIView):
             location=location or "",
             otp=otp
         )
-
-        # Send OTP via email (Note that a well structured email with proper styling should be created)
-        body = f"""
-                  <html>
-                    <head>
-                      <style>
-                        body{{
-                          font-family: Arial, sans-serif;
-                        }}
-                        h2 {{
-                          color: #007bff;   
-                        }}
-                        b{{
-                          background-color: #1b1a1a;
-                          color: #ffffff;
-                          padding: 10px 20px;
-                          border: none;
-                          border-radius: 5px;
-                        }}
-                        em{{
-                          color: red;
-                          margin-top: 100px;
-                        }}
-                        
-                      </style>
-                    </head>
-
-                    <body>
-                      <h2>Registration OTP</h2>
-                      <p> Your Comfirmation OTP is <b> {otp}.</b> It expires in 30 minutes.</p>
-                    
-                    <p><em>If you did not request this OTP, please ignore this email. </em></p>
-                    </body>
-                  </html>
-                    """
-        send_mail(
-            subject="Your Registration OTP",
-            message=body,
-            from_email='noreplay@domain.com',
-            recipient_list=[email],
-            fail_silently=False,
-            html_message=body
-        )
-
+        
+        subject = "Registration Confirmation"
+        context = {'otp': otp}
+        body = render_to_string('emails/registrations.html', context)
+        mail = EmailMessage(subject, body, from_email='no-reply@kingsworld.com', to=[email])
+        mail.content_subtype = 'html'
+        mail.send()
+        
         return Response(
             {"message": "OTP sent to your email. Please verify to complete registration."},
             status=status.HTTP_200_OK

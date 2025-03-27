@@ -38,6 +38,7 @@ class CreateEvent(APIView):
         serializer = EventSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
+            print('event created successfully')
             return Response(
                 {"message": "Event created successfully!", "data": serializer.data},
                 status=status.HTTP_200_OK
