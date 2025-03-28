@@ -27,12 +27,14 @@ class Events(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     banner = models.ImageField(upload_to="event_banners/", blank=True)
+    timezone = models.CharField(max_length=100, null=True, default="UTC")
     start_date = models.DateField()
     start_time = models.TimeField()
-    end_date = models.DateField(blank=True, null=True) 
-    end_time = models.TimeField(blank=True, null=True)
-    location = models.CharField(max_length=255)
-    event_type = models.CharField(max_length=100, default="Public")
+    end_date = models.DateField(null=True) 
+    end_time = models.TimeField(null=True)
+    location = models.CharField(max_length=255, blank=True) # Physical location
+    event_type = models.CharField(max_length=100, default="In-person") # In-person, Virtual, Hybrid
+    external_link = models.URLField(blank=True) # For virtual events
     capacity = models.PositiveIntegerField()
     is_paid = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

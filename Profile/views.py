@@ -102,8 +102,8 @@ class InitiateRegistration(APIView):
         
         subject = "Registration Confirmation"
         context = {'otp': otp}
-        body = render_to_string('emails/registrations.html', context)
-        mail = EmailMessage(subject, body, from_email='no-reply@kingsworld.com', to=[email])
+        body = render_to_string('emails/registration_mail.html', context)
+        mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to='support@fasticket.com', to=[email])
         mail.content_subtype = 'html'
         mail.send()
         
@@ -189,49 +189,12 @@ class ResetPassword(APIView):
             otp = f"{random.randint(100000, 999999)}"
             PasswordResetOTP.objects.create(user=user, otp=otp)
 
-            # Send OTP via email
-            subject = "Fasticket - Reset Password OTP"
-            body = f"""
-                  <html>
-                    <head>
-                      <style>
-                        body{{
-                          font-family: Arial, sans-serif;
-                        }}
-                        h2 {{
-                          color: #007bff;   
-                        }}
-                        b{{
-                          background-color: #1b1a1a;
-                          color: #ffffff;
-                          padding: 10px 20px;
-                          border: none;
-                          border-radius: 5px;
-                        }}
-                        em{{
-                          color: red;
-                          margin-top: 100px;
-                        }}
-                        
-                      </style>
-                    </head>
-
-                    <body>
-                      <h2>Password Reset OTP</h2>
-                      <p> Your OTP for password reset is <b> {otp}.</b> It expires in 30 minutes.</p>
-                    
-                    <p><em>If you did not request this OTP, please ignore this email. </em></p>
-                    </body>
-                  </html>
-                    """
-            send_mail(
-                subject=subject,
-                message=body,
-                from_email="no-reply@example.com", # Change during production
-                recipient_list=[user.email],
-                fail_silently=False,
-                html_message=body
-            )
+            subject = "Password Reset Confirmation"
+            context = {'otp': otp}
+            body = render_to_string('emails/login_mail.html', context)
+            mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to='support@fasticket.com', to=[email])
+            mail.content_subtype = 'html'
+            mail.send()
 
             return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
