@@ -103,7 +103,7 @@ class InitiateRegistration(APIView):
         subject = "Registration Confirmation"
         context = {'otp': otp}
         body = render_to_string('emails/registration_mail.html', context)
-        mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to='support@fasticket.com', to=[email])
+        mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to=['support@fasticket.com'], to=[email])
         mail.content_subtype = 'html'
         mail.send()
         
@@ -191,8 +191,8 @@ class ResetPassword(APIView):
 
             subject = "Password Reset Confirmation"
             context = {'otp': otp}
-            body = render_to_string('emails/login_mail.html', context)
-            mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to='support@fasticket.com', to=[email])
+            body = render_to_string('emails/reset_password.html', context)
+            mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to=['support@fasticket.com'], to=[email])
             mail.content_subtype = 'html'
             mail.send()
 

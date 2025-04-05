@@ -1,4 +1,5 @@
-@echo off 
+
+#! /usr/bin/bash
 
 echo 'making migrations...'
 python manage.py makemigrations 
