@@ -10,6 +10,21 @@ from .utils import generate_shareable_links
 
 # Create your models here.
 class Ticket(models.Model):
+    """
+    Represents a generic ticket which can be for an event, hotel, or travel.
+
+    Fields:
+        id (UUIDField): Unique identifier for the ticket (primary key).
+        category (CharField): The category of the ticket (e.g., 'event', 'hotel', 'travel').
+        image (ImageField): An optional image associated with the ticket.
+        price (DecimalField): The price of the ticket.
+        ticket_code (CharField): A unique code for the ticket (generated automatically).
+        total_tickets (PositiveIntegerField): The number of available tickets of this type.
+        status (CharField): The status of the ticket (e.g., 'pending', 'paid', 'cancelled').
+        qr_code (ImageField): A QR code generated for the ticket when its status is 'paid'.
+        created_at (DateTimeField): The date and time when the ticket was created.
+        updated_at (DateTimeField): The date and time when the ticket was last updated.
+    """
     CATEGORY_CHOICES = [
         ('event', 'Event'),
         ('hotel', 'Hotel'),
@@ -65,6 +80,17 @@ class Ticket(models.Model):
     
 
 class EventTicket(Ticket):
+    """
+    Represents a ticket specifically for an event, inheriting from the base Ticket model.
+
+    Fields:
+        title (CharField): The title of the event.
+        description (TextField): A description of the event.
+        event_date (DateTimeField): The date and time of the event.
+        choice (CharField): The type of event (e.g., 'LIVE', 'ONLINE').
+        start_date (DateTimeField): The start date and time of the event (can be same as event_date).
+        end_date (DateTimeField): The end date and time of the event.
+    """
     LIVE = 'LIVE'
     ONLINE = 'ONLINE'
 
@@ -85,6 +111,15 @@ class EventTicket(Ticket):
     
 
 class HotelTicket(Ticket):
+    """
+    Represents a ticket specifically for a hotel booking, inheriting from the base Ticket model.
+
+    Fields:
+        name (CharField): The name of the hotel.
+        description (TextField): A description of the hotel or booking details.
+        check_in (DateField): The check-in date for the hotel booking.
+        check_out (DateField): The check-out date for the hotel booking.
+    """
     name = models.CharField(max_length=255, null=True)
     description = models.TextField(null=True)
     check_in = models.DateField()
@@ -94,4 +129,8 @@ class HotelTicket(Ticket):
         return f"{self.id}"
 
 class TravelTicket(Ticket):
+    """
+    Represents a ticket specifically for travel, inheriting from the base Ticket model.
+    This model is currently a placeholder and can be extended with travel-specific fields.
+    """
     pass

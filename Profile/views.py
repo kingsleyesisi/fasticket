@@ -16,9 +16,29 @@ import random
 from django.core.mail import EmailMessage
 from datetime import timedelta
 from django.template.loader import render_to_string
+from django.contrib.auth.hashers import make_password
 
 # Login View
 class CustomAuthToken(ObtainAuthToken):
+  """
+  Custom authentication token view that extends Django REST Framework's ObtainAuthToken.
+  It allows users to log in using either their username or email.
+
+  Throttle Classes: UserRateThrottle (limits request frequency per user)
+
+  Allowed HTTP Methods:
+    - POST
+
+  Request Body (POST):
+    - username (str, optional): User's username or email. If 'email' is also provided, 'username' takes precedence if it's not an email format.
+    - email (str, optional): User's email (used if 'username' is not provided or is not an email).
+    - password (str): User's password.
+
+  Response:
+    - 200 OK: {'token': token.key, 'user_id': user.pk, 'username': user.username, 'email': user.email}
+    - 400 Bad Request: {'error': 'Incorrect password'} or {'error': 'User Does Not Exist'}
+    - 500 Internal Server Error: {'error': str(e)} (for other exceptions)
+  """
   throttle_classes = [UserRateThrottle]
 
   def post(self, request, *args, **kwargs):
@@ -34,7 +54,7 @@ class CustomAuthToken(ObtainAuthToken):
 
         token, created = Token.objects.get_or_create(user=user)
         
-        # This check and delete any token older than 2 hours 
+        # This check and delete any token older than 6 hours
         if token.created < now() - timedelta(hours=6):
            token.delete()
            token = Token.objects.create(user=user)
@@ -60,6 +80,28 @@ class CustomAuthToken(ObtainAuthToken):
 
 # Registration OTP
 class InitiateRegistration(APIView):
+    """
+    API view to initiate user registration by sending an OTP to the user's email.
+
+    Permissions: AllowAny
+
+    Allowed HTTP Methods:
+      - POST
+
+    Request Body (POST):
+      - username (str): Desired username.
+      - password (str): Desired password.
+      - email (str): User's email address.
+      - first_name (str): User's first name.
+      - last_name (str): User's last name.
+      - phone (str): User's phone number.
+      - company (str, optional): User's company.
+      - location (str, optional): User's location.
+
+    Response:
+      - 200 OK: {"message": "OTP sent to your email. Please verify to complete registration."}
+      - 400 Bad Request: {'error': 'Please provide all required fields'} or {'error': 'Username already exists'} or {'error': 'Email already exists'}
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -87,10 +129,11 @@ class InitiateRegistration(APIView):
             return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         otp = f"{random.randint(100000, 999999)}"
+        hashed_password = make_password(password)
 
         RegistrationOTP.objects.create(
             username=username,
-            password=password,  # Plaintext for demo NOTE: hash password in production
+            password=hashed_password,
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -113,6 +156,22 @@ class InitiateRegistration(APIView):
         )
 
 class RegisterUser(APIView):
+  """
+  API view to complete user registration by verifying the OTP.
+
+  Permissions: AllowAny
+
+  Allowed HTTP Methods:
+    - POST
+
+  Request Body (POST):
+    - email (str): User's email address.
+    - otp (str): The OTP received by the user.
+
+  Response:
+    - 201 Created: {"message": "Registration successful", "token": token.key, "user_id": user.pk, "username": user.username, "email": user.email}
+    - 400 Bad Request: {'error': 'Please provide both email and OTP'} or {'error': 'Invalid OTP or email'} or {'error': 'OTP has expired'}
+  """
   permission_classes = [AllowAny]
 
   def post(self, request, *args, **kwargs):
@@ -133,14 +192,16 @@ class RegisterUser(APIView):
       if not pending_registration.is_valid():
         return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
       
-      # Create the real user 
-      user = User.objects.create_user(
+      # Create the real user
+      # Use the pre-hashed password from pending_registration
+      user = User(
           username=pending_registration.username,
-          password=pending_registration.password,
           email=pending_registration.email,
           first_name=pending_registration.first_name,
           last_name=pending_registration.last_name
       )
+      user.password = pending_registration.password  # Assign already hashed password
+      user.save()
 
       UserProfile.objects.create(
           user=user,
@@ -163,6 +224,21 @@ class RegisterUser(APIView):
       }, status=status.HTTP_201_CREATED)
 
 class UpdateProfile(APIView):
+  """
+  API view to update the authenticated user's profile.
+
+  Permissions: IsAuthenticated (implicitly, as it uses request.user)
+
+  Allowed HTTP Methods:
+    - PUT
+
+  Request Body (PUT):
+    - Fields from UserProfileSerializer (e.g., company, phone, location). All fields are optional for partial updates.
+
+  Response:
+    - 200 OK: UserProfileSerializer.data (updated profile data)
+    - 400 Bad Request: serializer.errors
+  """
   def put(self, request, *args, **kwargs):
     user = request.user
     data = request.data
@@ -176,6 +252,21 @@ class UpdateProfile(APIView):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ResetPassword(APIView):
+    """
+    API view to initiate the password reset process by sending an OTP to the user's email.
+
+    Permissions: AllowAny (implicitly, not specified but typical for this action)
+
+    Allowed HTTP Methods:
+      - POST
+
+    Request Body (POST):
+      - email (str): The email address of the user requesting password reset. (Handled by RequestOTPSerializer)
+
+    Response:
+      - 200 OK: {"message": "OTP sent successfully"}
+      - 400 Bad Request: serializer.errors or {"error": "User with this email does not exist"}
+    """
     def post(self, request):
         serializer = RequestOTPSerializer(data=request.data)
         if serializer.is_valid():
@@ -200,7 +291,24 @@ class ResetPassword(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOTPView(APIView):
-  """ Vaidate OTP for reset Password"""
+  """
+  API view to verify the OTP and reset the user's password.
+
+  Permissions: AllowAny (implicitly, not specified but typical for this action)
+
+  Allowed HTTP Methods:
+    - POST
+
+  Request Body (POST):
+    - email (str): User's email address.
+    - otp (str): The OTP received by the user.
+    - new_password (str): The new password for the user.
+    (Handled by VerifyOTPSerializer)
+
+  Response:
+    - 200 OK: {"message": "Password reset successful", "token": new_token.key}
+    - 400 Bad Request: serializer.errors or {"error": "Invalid email"} or {"error": "Invalid or expired OTP"}
+  """
   def post(self, request):
     serializer = VerifyOTPSerializer(data=request.data)
     if serializer.is_valid():
@@ -238,4 +346,16 @@ class VerifyOTPView(APIView):
 @api_view(['GET'])
 @permission_classes([HasValidTokenPermission])
 def test(request):
+    """
+    A simple test endpoint to check if a bearer token is valid.
+
+    Permissions: HasValidTokenPermission (custom permission to check token validity)
+
+    Allowed HTTP Methods:
+      - GET
+
+    Response:
+      - 200 OK: {"message": "Access granted"}
+      - 401 Unauthorized (or other appropriate status from HasValidTokenPermission): If access is denied.
+    """
     return Response({"message": "Access granted"}, status=status.HTTP_200_OK)

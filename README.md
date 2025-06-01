@@ -14,6 +14,15 @@ Fasticket is a comprehensive platform designed to streamline event management, f
 *   **Email Verification:** Sends email to newly registered user
 *   **Password Reset:** Sends an OTP to registered user to reset password
 
+## Project Structure 🏗️
+
+The project is organized into the following Django apps:
+
+*   **`Profile`**: Handles user authentication (registration, login, OTP verification, password reset) and user profile management.
+*   **`event_management`**: Manages the creation, updating, deletion, and retrieval of events. It also handles event-specific details like hosts and ticket types (distinct from the general ticket management).
+*   **`ticket_management`**: Deals with the lifecycle of different kinds of tickets (e.g., event tickets, hotel tickets, travel tickets), including their creation, validation, and sharing.
+*   **`payment`**: Integrates with Paystack to process payments for tickets.
+
 ## Installation 🔧
 
 Follow these steps to get Fasticket up and running on your local machine:
@@ -93,16 +102,66 @@ Follow these steps to get Fasticket up and running on your local machine:
     *   The API endpoints are available at `http://localhost:8000/`.
     *   Use tools like Postman or `curl` to interact with the API or any API testing tools of your choice.
 
-2.  **User Authentication:**
+2.  **User Authentication (`/auth/`)**
 
-    *   **Register:** `POST /auth/register/initiate` and `POST /auth/register/confirm` to create a new user.
-    *   **Login:** `POST /auth/login` to obtain an authentication token.
-    *   Include the token in the `Authorization` header for protected endpoints.
+    *   **Register:**
+        *   `POST /auth/register/initiate`: Initiates the registration process and sends an OTP.
+            *   Example Body: `{"username": "newuser", "password": "password123", "email": "user@example.com", "first_name": "Test", "last_name": "User", "phone": "1234567890"}`
+        *   `POST /auth/register/confirm`: Confirms registration with the OTP.
+            *   Example Body: `{"email": "user@example.com", "otp": "123456"}`
+    *   **Login:** `POST /auth/login`: Logs in an existing user and returns an auth token.
+        *   Example Body: `{"username": "testuser", "password": "password123"}` or `{"email": "user@example.com", "password": "password123"}`
+    *   **Password Reset:**
+        *   `POST /auth/reset`: Initiates password reset by sending an OTP. (Corresponds to `ResetPassword` view)
+            *   Example Body: `{"email": "user@example.com"}`
+        *   `POST /auth/verify-reset`: Verifies OTP and sets a new password. (Corresponds to `VerifyOTPView` view)
+            *   Example Body: `{"email": "user@example.com", "otp": "123456", "new_password": "newsecurepassword"}`
+    *   **Check Authentication:** `GET /checkAuth`: A test endpoint to verify if the token is valid. (Requires Authorization token)
+
+
+3.  **Event Management (`/events/`)**
+
+    *   **Create Event:** `POST /events/create`: Creates a new event. (Requires Authorization token)
+        *   Example Body: `{"title": "My Awesome Event", "description": "Join us!", "start_date": "2024-12-01", "start_time": "10:00:00", "capacity": 100, "is_paid": true, "tickets": [{"ticket_type": "General", "quantity": 50, "price": 25.00}]}`
+    *   **Get All Events:** `GET /events/getAll`: Retrieves a list of all events.
+    *   **Get Specific Event:** `GET /events/get/<event_id>`: Retrieves details of a specific event by its ID.
+    *   **Update Event:** `PUT /events/update/<event_id>`: Updates an existing event. (Requires Authorization token, user must be event owner)
+    *   **Delete Event:** `DELETE /events/delete/<event_id>`: Deletes an event. (Requires Authorization token, user must be event owner)
+    *   **View Event Creation Form (Test):** `GET /events/view`: Renders an HTML form for creating an event (primarily for testing/dev).
+
+
+4.  **Ticket Management (`/main/`)**
+
+    This app manages different types of tickets. Endpoints are usually prefixed with `/main/`.
+    *   **Generic Tickets (`/main/tickets/`)**:
+        *   List/Create: `GET /main/tickets/`, `POST /main/tickets/`
+        *   Retrieve/Update/Delete: `GET /main/tickets/<ticket_id>/`, `PUT /main/tickets/<ticket_id>/`, `DELETE /main/tickets/<ticket_id>/`
+        *   Validate Ticket: `GET /main/tickets/<ticket_id>/validate/`
+        *   Share Ticket: `GET /main/tickets/<ticket_id>/share/` (Note: This is defined in the model but might not be directly exposed via a URL unless explicitly routed in `ticket_management/urls.py`)
+    *   **Event Tickets (`/main/event/`)**:
+        *   List/Create: `GET /main/event/`, `POST /main/event/`
+        *   Retrieve/Update/Delete: `GET /main/event/<ticket_id>/`, `PUT /main/event/<ticket_id>/`, `DELETE /main/event/<ticket_id>/`
+    *   **Hotel Tickets (`/main/hotel/`)**:
+        *   List/Create: `GET /main/hotel/`, `POST /main/hotel/`
+        *   Retrieve/Update/Delete: `GET /main/hotel/<ticket_id>/`, `PUT /main/hotel/<ticket_id>/`, `DELETE /main/hotel/<ticket_id>/`
+    *   **Travel Tickets (`/main/travel/`)**:
+        *   List/Create: `GET /main/travel/`, `POST /main/travel/`
+        *   Retrieve/Update/Delete: `GET /main/travel/<ticket_id>/`, `PUT /main/travel/<ticket_id>/`, `DELETE /main/travel/<ticket_id>/`
+
+5.  **Payment (`/payments/`)**
+
+    *   **Initiate Payment:** `POST /payments/initiate_payment/`: Initiates payment for an event/ticket.
+        *   Example Body: `{"email": "user@example.com", "amount": 2500, "eventID": "event_id_123"}` (Amount is in smallest currency unit, e.g., kobo for NGN)
+    *   **Verify Payment:** `GET /payments/verify_payment/<reference>`: Verifies the payment status using the reference from Paystack. The actual callback URL configured on Paystack might differ but will likely trigger a view that uses this logic.
+
+## API Endpoints (Legacy - for reference, might be outdated)
+
+The following information might be outdated due to recent refactoring. Please refer to the code or updated sections above.
 
 3.  **Event Management:**
 
     *   **Create Event:** `POST /events/create` to create a new event.
-    *   **Get All Events:** `GET /events/getAll` to retrieve all events.
+    *   **Get All Events:** `GET /events/getAll` to retrieve all events. (Note: Model name changed from Events to Event)
     *   **Get Event:** `GET /events/get/<pk>` to retrieve a specific event by ID.
     *   **Update Event:** `PUT /events/update/<pk>` to update an existing event.
     *   **Delete Event:** `DELETE /events/delete/<pk>` to delete an event.
@@ -114,6 +173,7 @@ Follow these steps to get Fasticket up and running on your local machine:
 5.  **View Form:**
 
      *   **Create Event**: `GET /events/view` To view the form for testing purposes
+
 
 ## Contributing 🤝
 
