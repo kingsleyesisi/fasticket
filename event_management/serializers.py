@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Events, Tickets, Hosts #, TicketCategories
+from .models import Event, Tickets, Hosts #, TicketCategories
 from rest_framework import serializers
 
 class TicketSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class EventSerializer(serializers.ModelSerializer):
     hosts = HostSerializer(many=True, required=False)
 
     class Meta:
-        model = Events
+        model = Event
         fields = '__all__'
 
     def validate(self, attrs):
@@ -50,7 +50,7 @@ class EventSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         tickets_data = validated_data.pop('tickets', [])  # Extract ticket
         host_data = validated_data.pop('hosts', [])  # Extract host if present
-        event = Events.objects.create(**validated_data)
+        event = Event.objects.create(**validated_data)
 
         # Create ticket  for the event if it is paid
         if event.is_paid:

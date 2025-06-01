@@ -45,9 +45,9 @@ INSTALLED_APPS = [
 
     # Local apps
     'Profile',
-    'Event_Manager',
+    'event_management',
     'payment',
-    'event',
+    'ticket_management',
 ]
 
 MIDDLEWARE = [
