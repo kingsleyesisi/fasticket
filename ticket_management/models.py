@@ -6,25 +6,10 @@ from django.core.files.base import ContentFile
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .utils import generate_shareable_links
+from django.contrib.auth.models import User
+from django.utils import timezone
 
-
-# Create your models here.
 class Ticket(models.Model):
-    """
-    Represents a generic ticket which can be for an event, hotel, or travel.
-
-    Fields:
-        id (UUIDField): Unique identifier for the ticket (primary key).
-        category (CharField): The category of the ticket (e.g., 'event', 'hotel', 'travel').
-        image (ImageField): An optional image associated with the ticket.
-        price (DecimalField): The price of the ticket.
-        ticket_code (CharField): A unique code for the ticket (generated automatically).
-        total_tickets (PositiveIntegerField): The number of available tickets of this type.
-        status (CharField): The status of the ticket (e.g., 'pending', 'paid', 'cancelled').
-        qr_code (ImageField): A QR code generated for the ticket when its status is 'paid'.
-        created_at (DateTimeField): The date and time when the ticket was created.
-        updated_at (DateTimeField): The date and time when the ticket was last updated.
-    """
     CATEGORY_CHOICES = [
         ('event', 'Event'),
         ('hotel', 'Hotel'),
@@ -35,9 +20,13 @@ class Ticket(models.Model):
         ('pending', 'Pending'),
         ('paid', 'Paid'),
         ('cancelled', 'Cancelled'),
+        ('used', 'Used'),
+        ('transferred', 'Transferred'),
+        ('refunded', 'Refunded'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tickets')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     image = models.ImageField(upload_to='images/', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0.00)
@@ -47,56 +36,80 @@ class Ticket(models.Model):
     qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    checked_in = models.BooleanField(default=False)
+    check_in_time = models.DateTimeField(null=True, blank=True)
+    transfer_history = models.JSONField(default=list, blank=True)
+    holder_name = models.CharField(max_length=255, null=True)
+    holder_email = models.EmailField(null=True)
+    holder_phone = models.CharField(max_length=20, null=True)
 
     def __str__(self):
-        return f"{self.category} - {self.title}"
+        return f"{self.category} - {self.ticket_code}"
     
     def save(self, *args, **kwargs):
         if not self.ticket_code:
             self.ticket_code = self.generate_ticket_code()
-        if self.status == 'paid':  # Generate QR only after payment
+        if self.status == 'paid' and not self.qr_code:
             self.generate_qr_code()
         super().save(*args, **kwargs)
     
     def generate_ticket_code(self):
-        import uuid
-        return str(uuid.uuid4())[:10]
+        return str(uuid.uuid4())[:10].upper()
     
     def generate_qr_code(self):
-        qr = qrcode.make(self.ticket_code)
+        qr_data = {
+            'ticket_code': self.ticket_code,
+            'category': self.category,
+            'holder_name': self.holder_name,
+            'status': self.status,
+        }
+        qr = qrcode.make(str(qr_data))
         buffer = BytesIO()
         qr.save(buffer, format='PNG')
         self.qr_code.save(f'qr_{self.ticket_code}.png', ContentFile(buffer.getvalue()), save=False)
 
-    @action(detail=True, methods=['get'])
-    def share(self, request, pk=None):
-        """
-        Custom action to share a ticket by ticket_id.
-        Usage: /main/tickets/<id>/share/
-        """
-        ticket = self.get_object()
-        shareable_link = generate_shareable_links(ticket)
-        return Response({"shareable_link": shareable_link})
-    
+    def check_in(self):
+        if not self.checked_in and self.status == 'paid':
+            self.checked_in = True
+            self.check_in_time = timezone.now()
+            self.save()
+            return True
+        return False
+
+    def transfer_ticket(self, new_user, new_holder_name, new_holder_email, new_holder_phone):
+        if self.status != 'paid':
+            return False
+        
+        transfer_record = {
+            'from_user': self.user.id,
+            'to_user': new_user.id,
+            'transfer_date': timezone.now().isoformat(),
+            'previous_holder': self.holder_name,
+        }
+        
+        self.transfer_history.append(transfer_record)
+        self.user = new_user
+        self.holder_name = new_holder_name
+        self.holder_email = new_holder_email
+        self.holder_phone = new_holder_phone
+        self.status = 'transferred'
+        self.save()
+        return True
+
+    def request_refund(self):
+        if self.status == 'paid' and not self.checked_in:
+            self.status = 'refunded'
+            self.save()
+            return True
+        return False
 
 class EventTicket(Ticket):
-    """
-    Represents a ticket specifically for an event, inheriting from the base Ticket model.
-
-    Fields:
-        title (CharField): The title of the event.
-        description (TextField): A description of the event.
-        event_date (DateTimeField): The date and time of the event.
-        choice (CharField): The type of event (e.g., 'LIVE', 'ONLINE').
-        start_date (DateTimeField): The start date and time of the event (can be same as event_date).
-        end_date (DateTimeField): The end date and time of the event.
-    """
     LIVE = 'LIVE'
     ONLINE = 'ONLINE'
 
     EVENT_CHOICES = [
-        ('LIVE','LIVE'),
-        ('ONLINE','ONLINE'),
+        ('LIVE', 'LIVE'),
+        ('ONLINE', 'ONLINE'),
     ]
 
     title = models.CharField(max_length=255, null=True)
@@ -105,32 +118,23 @@ class EventTicket(Ticket):
     choice = models.CharField(max_length=6, choices=EVENT_CHOICES, default=LIVE)
     start_date = models.DateTimeField(null=True)
     end_date = models.DateTimeField(null=True)
+    venue = models.CharField(max_length=255, null=True)
+    available_tickets = models.PositiveIntegerField(default=0)
+    max_tickets_per_user = models.PositiveIntegerField(default=4)
 
     def __str__(self):
-        return f"{self.id}"
-    
+        return f"{self.title} - {self.ticket_code}"
 
-class HotelTicket(Ticket):
-    """
-    Represents a ticket specifically for a hotel booking, inheriting from the base Ticket model.
+    def is_available(self):
+        return (
+            self.available_tickets > 0 and 
+            self.event_date > timezone.now() and 
+            self.status == 'paid'
+        )
 
-    Fields:
-        name (CharField): The name of the hotel.
-        description (TextField): A description of the hotel or booking details.
-        check_in (DateField): The check-in date for the hotel booking.
-        check_out (DateField): The check-out date for the hotel booking.
-    """
-    name = models.CharField(max_length=255, null=True)
-    description = models.TextField(null=True)
-    check_in = models.DateField()
-    check_out = models.DateField()
-
-    def __str__(self):
-        return f"{self.id}"
-
-class TravelTicket(Ticket):
-    """
-    Represents a ticket specifically for travel, inheriting from the base Ticket model.
-    This model is currently a placeholder and can be extended with travel-specific fields.
-    """
-    pass
+    def reserve_ticket(self):
+        if self.is_available():
+            self.available_tickets -= 1
+            self.save()
+            return True
+        return False

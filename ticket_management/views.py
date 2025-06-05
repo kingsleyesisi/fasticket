@@ -1,152 +1,94 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.core.mail import EmailMessage
 from django.conf import settings
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import *
 from . import serializers
 import os
 
-# Create your views here.
 class TicketViewSet(viewsets.ModelViewSet):
-    """
-    API viewset for managing generic Tickets.
-
-    Provides standard CRUD operations for Ticket instances.
-    Includes a custom action to validate a ticket.
-
-    Permissions: AllowAny (for all actions)
-
-    Allowed HTTP Methods:
-        - GET (list, retrieve)
-        - POST (create)
-        - PUT (update)
-        - PATCH (partial_update)
-        - DELETE (destroy)
-        - GET (validate_ticket - custom action)
-
-    Request/Response Formats:
-        - Uses `serializers.TicketSerializer` for request and response data.
-    """
     queryset = Ticket.objects.all()
     serializer_class = serializers.TicketSerializer
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [AllowAny]
+    def get_queryset(self):
+        if self.action in ['list', 'retrieve']:
+            return Ticket.objects.filter(user=self.request.user)
+        return Ticket.objects.all()
 
-    def send_qr_code_email(self, ticket):
-        """
-        Sends an email with the ticket QR code attached.
-        This is a helper method and not directly exposed as an API endpoint.
+    @action(detail=True, methods=['post'])
+    def check_in(self, request, pk=None):
+        ticket = self.get_object()
+        if ticket.check_in():
+            return Response({'message': 'Check-in successful'})
+        return Response(
+            {'error': 'Check-in failed. Ticket may be invalid or already used.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-        Args:
-            ticket (Ticket): The ticket instance for which to send the QR code.
-        """
-        # Note: `ticket.event_name` and `ticket.user.email` are assumed to exist.
-        # These fields are not standard in the base Ticket model shown.
-        # This might indicate that this method is intended for a more specific ticket model
-        # or that the Ticket model has been customized elsewhere.
-        subject = f"Your Ticket for {getattr(ticket, 'event_name', 'Your Event')}"
-        message = f"Hello,\n\nYour ticket has been generated successfully. Please find your QR code attached.\n\nTicket Code: {ticket.ticket_code}\n\nThank you for your purchase!"
-        recipient_email = getattr(getattr(ticket, 'user', None), 'email', None)
+    @action(detail=True, methods=['post'])
+    def transfer(self, request, pk=None):
+        ticket = self.get_object()
+        serializer = serializers.TicketTransferSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            if ticket.transfer_ticket(
+                request.user,
+                serializer.validated_data['new_holder_name'],
+                serializer.validated_data['new_holder_email'],
+                serializer.validated_data['new_holder_phone']
+            ):
+                return Response({'message': 'Ticket transferred successfully'})
+            return Response(
+                {'error': 'Transfer failed. Ticket may be invalid or not transferable.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if not recipient_email:
-            # Cannot send email without a recipient
-            return
+    @action(detail=True, methods=['post'])
+    def request_refund(self, request, pk=None):
+        ticket = self.get_object()
+        if ticket.request_refund():
+            return Response({'message': 'Refund request submitted successfully'})
+        return Response(
+            {'error': 'Refund request failed. Ticket may be invalid or already used.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-        if ticket.qr_code:
-            email = EmailMessage(subject, message, settings.DEFAULT_FROM_EMAIL, [recipient_email])
-            qr_code_path = ticket.qr_code.path
-
-            if os.path.exists(qr_code_path):
-                email.attach_file(qr_code_path)
-            email.send()
-
-    @action(detail=True, methods=['get'], url_path='validate')
-    def validate_ticket(self, request, pk=None):
-        """
-        Custom action to validate a ticket by its ID (pk).
-
-        Allowed HTTP Methods:
-            - GET
-
-        Path: `/tickets/{pk}/validate/`
-
-        Response:
-            - 200 OK: {'message': 'Ticket is valid', 'ticket': TicketSerializer.data}
-            - 404 Not Found: If ticket with the given pk does not exist.
-        """
-        ticket = get_object_or_404(Ticket, id=pk)
-        serializer = self.get_serializer(ticket)
-        return Response({'message': 'Ticket is valid', 'ticket': serializer.data})
-
+    @action(detail=False, methods=['post'])
+    def verify(self, request):
+        serializer = serializers.TicketVerificationSerializer(data=request.data)
+        if serializer.is_valid():
+            ticket = get_object_or_404(
+                Ticket,
+                ticket_code=serializer.validated_data['ticket_code']
+            )
+            return Response({
+                'valid': ticket.status == 'paid' and not ticket.checked_in,
+                'ticket': self.get_serializer(ticket).data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class EventTicketViewSet(viewsets.ModelViewSet):
-    """
-    API viewset for managing EventTickets.
-
-    Provides standard CRUD operations for EventTicket instances.
-
-    Permissions: AllowAny (for all actions)
-
-    Allowed HTTP Methods:
-        - GET (list, retrieve)
-        - POST (create)
-        - PUT (update)
-        - PATCH (partial_update)
-        - DELETE (destroy)
-
-    Request/Response Formats:
-        - Uses `serializers.EventTicketSerializer` for request and response data.
-    """
     queryset = EventTicket.objects.all()
     serializer_class = serializers.EventTicketSerializer
+    permission_classes = [IsAuthenticated]
 
-    permission_classes = [AllowAny]
+    def get_queryset(self):
+        queryset = EventTicket.objects.all()
+        if self.action == 'list':
+            return queryset.filter(event_date__gte=timezone.now())
+        return queryset
 
-class HotelTicketViewSet(viewsets.ModelViewSet):
-    """
-    API viewset for managing HotelTickets.
-
-    Provides standard CRUD operations for HotelTicket instances.
-
-    Permissions: AllowAny (for all actions)
-
-    Allowed HTTP Methods:
-        - GET (list, retrieve)
-        - POST (create)
-        - PUT (update)
-        - PATCH (partial_update)
-        - DELETE (destroy)
-
-    Request/Response Formats:
-        - Uses `serializers.HotelTicketSerializer` for request and response data.
-    """
-    queryset = HotelTicket.objects.all()
-    serializer_class = serializers.HotelTicketSerializer
-
-    permission_classes = [AllowAny]
-
-class TravelTicketViewSet(viewsets.ModelViewSet):
-    """
-    API viewset for managing TravelTickets.
-
-    Provides standard CRUD operations for TravelTicket instances.
-
-    Permissions: AllowAny (for all actions)
-
-    Allowed HTTP Methods:
-        - GET (list, retrieve)
-        - POST (create)
-        - PUT (update)
-        - PATCH (partial_update)
-        - DELETE (destroy)
-
-    Request/Response Formats:
-        - Uses `serializers.TravelTicketSerializer` for request and response data.
-    """
-    queryset = TravelTicket.objects.all()
-    serializer_class = serializers.TravelTicketSerializer
-
-    permission_classes = [AllowAny]
+    @action(detail=True, methods=['post'])
+    def reserve(self, request, pk=None):
+        ticket = self.get_object()
+        if ticket.reserve_ticket():
+            return Response({'message': 'Ticket reserved successfully'})
+        return Response(
+            {'error': 'Reservation failed. Ticket may be unavailable.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
