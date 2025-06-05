@@ -45,7 +45,7 @@ class Ticket(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0.00)
     ticket_code = models.CharField(max_length=10, unique=True, null=True)
     total_tickets = models.PositiveIntegerField(default=1)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
     qr_code = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

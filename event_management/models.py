@@ -92,14 +92,22 @@ class Tickets(models.Model):
 
     Fields:
         event (ForeignKey): The event for which this ticket type is available.
-        ticket_type (CharField): The name or type of the ticket (e.g., "General Admission", "VIP").
+        ticket_type (CharField): The name or type of the ticket (e.g., "Regular", "VIP").
         quantity (PositiveIntegerField): The number of tickets available for this type.
         price (DecimalField): The price of one ticket of this type.
+        available (PositiveIntegerField): The number of tickets avaialble (by default it is the quantity of tickets)
     """
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets")
     ticket_type = models.CharField(max_length=200)
     quantity = models.PositiveIntegerField()
+    available = models.PositiveIntegerField(default=0)  # Default value set to 0
     price = models.DecimalField(max_digits=10, decimal_places=2)
-
+    
     def __str__(self):
         return f"{self.ticket_type} - {self.event} - {self.event.id}"
+    
+    def save(self, *args, **kwargs):
+        # Only set available on creation if it wasn't provided
+        if self._state.adding and self.available == 0:
+            self.available = self.quantity
+        super().save(*args, **kwargs)

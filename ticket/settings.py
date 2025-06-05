@@ -130,14 +130,44 @@ WSGI_APPLICATION = 'ticket.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+status = env('ENVIRONMENT', default='sqlite')
+if status == 'local':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+elif status == 'production':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('POSTGRES_DATABASE'),
+            'USER': env('POSTGRES_USER'),
+            'PASSWORD': env('POSTGRES_PASSWORD'),
+            'HOST': env('POSTGRES_HOST', default='localhost'),  # Default to localhost if not set
+            'PORT': env('POSTGRES_PORT', default='5432'),  # Default PostgreSQL port
+        }
+    }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': env('MYSQL_DATABASE'),
+#         'USER': env('MYSQL_USER'),
+#         'PASSWORD': env('MYSQL_PASSWORD'),
+#         'HOST': env('MYSQL_HOST', default='localhost'),  # Default to localhost if not set
+#         'PORT': env('MYSQL_PORT', default='3306'),  # Default MySQL port
+#     }
+# }
+
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
