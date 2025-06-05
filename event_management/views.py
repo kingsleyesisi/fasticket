@@ -37,19 +37,7 @@ class CreateEvent(APIView):
         - external_link (url, optional): External link for virtual events.
         - capacity (int): Capacity of the event.
         - is_paid (bool, optional): Whether the event is paid (default: False).
-        - tickets (list of dict, optional): List of ticket details if the event is paid.
-            Each dict should contain:
-                - ticket_type (str): Type of ticket.
-                - quantity (int): Number of tickets.
-                - price (decimal): Price of the ticket.
-        - hosts (list of dict, optional): List of host details.
-            Each dict should contain:
-                - name (str): Name of the host.
-                - email (str, optional): Email of the host.
-                - role (str): Role of the host.
-                - social_media (url, optional): Social media link of the host.
-                - phone (str, optional): Phone number of the host.
-
+        
     Response (POST):
         - 200 OK: {"message": "Event created successfully!", "data": EventSerializer.data}
         - 400 Bad Request: {"error": "Invalid JSON for tickets."} or {"error": "Invalid Json for Host"} or serializer.errors

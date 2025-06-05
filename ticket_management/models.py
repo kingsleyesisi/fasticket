@@ -11,11 +11,11 @@ from .utils import generate_shareable_links
 # Create your models here.
 class Ticket(models.Model):
     """
-    Represents a generic ticket which can be for an event, hotel, or travel.
+    Represents a generic ticket which can be for an event.
 
     Fields:
         id (UUIDField): Unique identifier for the ticket (primary key).
-        category (CharField): The category of the ticket (e.g., 'event', 'hotel', 'travel').
+        category (CharField): The category of the ticket (e.g., 'event'').
         image (ImageField): An optional image associated with the ticket.
         price (DecimalField): The price of the ticket.
         ticket_code (CharField): A unique code for the ticket (generated automatically).
@@ -27,8 +27,6 @@ class Ticket(models.Model):
     """
     CATEGORY_CHOICES = [
         ('event', 'Event'),
-        ('hotel', 'Hotel'),
-        ('travel', 'Travel'),
     ]
 
     STATUS_CHOICES = [
@@ -109,28 +107,3 @@ class EventTicket(Ticket):
     def __str__(self):
         return f"{self.id}"
     
-
-class HotelTicket(Ticket):
-    """
-    Represents a ticket specifically for a hotel booking, inheriting from the base Ticket model.
-
-    Fields:
-        name (CharField): The name of the hotel.
-        description (TextField): A description of the hotel or booking details.
-        check_in (DateField): The check-in date for the hotel booking.
-        check_out (DateField): The check-out date for the hotel booking.
-    """
-    name = models.CharField(max_length=255, null=True)
-    description = models.TextField(null=True)
-    check_in = models.DateField()
-    check_out = models.DateField()
-
-    def __str__(self):
-        return f"{self.id}"
-
-class TravelTicket(Ticket):
-    """
-    Represents a ticket specifically for travel, inheriting from the base Ticket model.
-    This model is currently a placeholder and can be extended with travel-specific fields.
-    """
-    pass

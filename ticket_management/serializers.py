@@ -14,17 +14,3 @@ class EventTicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = EventTicket
         fields = '__all__'
-
-class HotelTicketSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = HotelTicket
-        fields = ['id', 'category', 'name', 'description', 'image', 'price', 'ticket_code', 'qr_code', 'status']
-        read_only_fields = ['check_in', 'check_out']
-
-
-class TravelTicketSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = TravelTicket
-        fields = '__all__'
