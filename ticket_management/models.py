@@ -40,7 +40,7 @@ class Ticket(models.Model):
     ]
 
     id = models.CharField(max_length=5, primary_key=True, default=generate_ticket_id)  # Changed to CharField for custom ID
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tickets')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='tickets', null=True, blank=True)
     ticket_type = models.ForeignKey(EventTicketType, on_delete=models.SET_NULL, null=True, blank=True, related_name="purchased_tickets")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0.00)

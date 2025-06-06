@@ -8,11 +8,11 @@ def generate_shareable_links(ticket):
 def generate_ticket_id():
     """
     Generate a unique 5-character alphanumeric ticket ID.
-    This function loops until it finds a number that isn’t already used as a ticket ID.
+    This function loops until it finds a number that isn't already used as a ticket ID.
     """
-    from ticket_management.models import Tickets  # Lazy import to avoid circular import
+    from ticket_management.models import Ticket  # Lazy import to avoid circular import
     while True:
         new_id = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=5))
 
-        if not Tickets.objects.filter(id=new_id).exists():
+        if not Ticket.objects.filter(id=new_id).exists():
             return new_id

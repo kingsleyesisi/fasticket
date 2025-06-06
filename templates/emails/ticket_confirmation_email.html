@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Ticket Confirmation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+        .container { background-color: #f9f9f9; padding: 20px; border-radius: 5px; }
+        .header { color: #444; font-size: 24px; margin-bottom: 20px; }
+        .ticket-details { margin-bottom: 20px; }
+        .ticket-details p { margin: 5px 0; }
+        .footer { margin-top: 30px; font-size: 12px; color: #777; }
+        .banner img { max-width: 100%; height: auto; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Ticket Confirmation</h1>
+
+        {% if ticket_details.holder_name %}
+            <p>Dear {{ ticket_details.holder_name }},</p>
+        {% else %}
+            <p>Dear Customer,</p>
+        {% endif %}
+
+        <p>Thank you for your purchase for <strong>{{ ticket_details.event_name }}</strong>! We're excited to have you.</p>
+
+        {% if event_banner_url %}
+            <div class="banner">
+                <img src="{{ event_banner_url }}" alt="{{ ticket_details.event_name }} Banner">
+            </div>
+        {% endif %}
+
+        <div class="ticket-details">
+            <h2>Your Ticket Information:</h2>
+            <p><strong>Event:</strong> {{ ticket_details.event_name }}</p>
+            <p><strong>Ticket Type:</strong> {{ ticket_details.ticket_type }}</p>
+            <p><strong>Price:</strong> {{ ticket_details.price }}</p>
+            <p><strong>Ticket Code:</strong> {{ ticket_details.ticket_code }}</p>
+            <p><strong>Purchased by:</strong> {{ ticket_details.holder_name }} ({{ ticket_details.holder_email }})</p>
+        </div>
+
+        <p>Please keep your ticket code safe. You may need it for entry or to manage your booking.</p>
+        
+        <p>If you have any questions, feel free to contact our support team.</p>
+
+        <p>See you at the event!</p>
+        <p>The {{ ticket_details.event_name }} Team</p>
+
+        <div class="footer">
+            <p>Visit our <a href="{{ frontend_url | default:'#' }}">website</a> for more details.</p>
+            <p>&copy; {% now "Y" %} Your Event Company. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

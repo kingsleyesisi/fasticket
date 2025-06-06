@@ -13,6 +13,9 @@ from django.contrib.auth import get_user_model
 from ticket_management.models import Ticket as PurchasedTicket
 from django.db import transaction, IntegrityError
 from django.db.models import F
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings # To get DEFAULT_FROM_EMAIL
 
 User = get_user_model()
 
@@ -41,7 +44,7 @@ class InitializePaymentView(APIView):
 
             amount = float(ticket_type.price) # Get amount from the ticket type model
 
-            if ticket_type.quantity <= 0:
+            if ticket_type.available <= 0:
                 return Response({'error': 'This ticket type is sold out.'}, status=status.HTTP_400_BAD_REQUEST)
 
             paystack = Paystack()
@@ -116,16 +119,11 @@ class CallBack(APIView):
                          return JsonResponse({"data": "success", "message": "Payment already verified (checked in transaction)."}, status=200)
 
                     # 1. Retrieve User
+                    user = None # Initialize user to None
                     try:
                         user = User.objects.get(email=payment_to_update.email)
                     except User.DoesNotExist:
-                        # Decide handling: For now, log and error out.
-                        # In a real app, might create a guest user or assign to a default.
-                        print(f"User with email {payment_to_update.email} not found for payment {payment_to_update.reference}.")
-                        # Return a response that indicates payment was successful but ticket assignment failed
-                        # This is a critical error that needs monitoring.
-                        # For now, we won't mark payment as verified if user is not found, to allow retry or manual intervention.
-                        return JsonResponse({'error': f'User with email {payment_to_update.email} not found. Payment verification successful but ticket not created.'}, status=400) # Or 500 if it's an internal setup issue
+                        print(f"No registered user found for email {payment_to_update.email}. Proceeding with guest checkout.")
 
                     # 2. Retrieve Ticket Type
                     try:
@@ -137,7 +135,7 @@ class CallBack(APIView):
 
 
                     # 3. Check Availability & Decrement Quantity (Atomic)
-                    if ticket_type.quantity <= 0:
+                    if ticket_type.available <= 0:
                         print(f"Ticket type {ticket_type.id} is sold out. Payment {payment_to_update.reference} was processed but no ticket issued.")
                         # This is an oversell scenario. Payment is verified, but no ticket can be issued.
                         # Mark payment as verified but flag for review/refund.
@@ -145,9 +143,9 @@ class CallBack(APIView):
                         payment_to_update.save()
                         return JsonResponse({'error': 'Tickets are sold out. Your payment was successful but no ticket could be issued. Please contact support.', "data": "oversold"}, status=200) # 200 because payment is fine, but needs follow up
 
-                    ticket_type.quantity = F('quantity') - 1
-                    ticket_type.save(update_fields=['quantity'])
-                    ticket_type.refresh_from_db() # Get the new quantity
+                    ticket_type.available = F('available') - 1
+                    ticket_type.save(update_fields=['available'])
+                    ticket_type.refresh_from_db() # Get the new available
 
                     # 4. Create PurchasedTicket
                     purchased_ticket = PurchasedTicket.objects.create(
@@ -165,7 +163,53 @@ class CallBack(APIView):
                     payment_to_update.Verified = True
                     payment_to_update.save(update_fields=['Verified', 'paid_at']) # Assuming paid_at is updated in model save
 
-                    # TODO: Send email confirmation with ticket details (out of scope for this subtask)
+                    try:
+                        # Prepare email context
+                        email_context = {
+                            'ticket_details': {
+                                'event_name': ticket_type.event.title,
+                                'ticket_type': ticket_type.ticket_type,
+                                'price': purchased_ticket.price,
+                                'ticket_code': purchased_ticket.ticket_code,
+                                'holder_name': purchased_ticket.holder_name,
+                                'holder_email': purchased_ticket.holder_email,
+                                # Add any other details you want in the email
+                            },
+                            'event_banner_url': ticket_type.event.banner.url if ticket_type.event.banner else None,
+                            'frontend_url': settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else '#'
+                        }
+                        
+                        subject = f"Your Ticket Confirmation for {ticket_type.event.title}"
+                        
+                        # Render HTML content
+                        html_message = render_to_string('emails/ticket_confirmation_email.html', email_context)
+                        
+                        # Plain text message (optional, but good practice)
+                        plain_message = (
+                            f"Hello {purchased_ticket.holder_name},\n\n"
+                            f"Thank you for your purchase! Here are your ticket details:\n"
+                            f"Event: {ticket_type.event.title}\n"
+                            f"Ticket Type: {ticket_type.ticket_type}\n"
+                            f"Price: {purchased_ticket.price}\n"
+                            f"Ticket Code: {purchased_ticket.ticket_code}\n\n"
+                            f"You can view your ticket details and QR code (if applicable) by logging into your account or using the ticket code.\n\n"
+                            f"Thank you,\nThe Event Team"
+                        )
+                        
+                        send_mail(
+                            subject,
+                            plain_message,
+                            settings.DEFAULT_FROM_EMAIL,
+                            [purchased_ticket.holder_email],
+                            html_message=html_message,
+                            fail_silently=False # Set to True in production if you don't want email errors to break the flow
+                        )
+                        print(f"Ticket confirmation email sent to {purchased_ticket.holder_email}")
+                    except Exception as e:
+                        # Log email sending failure
+                        print(f"Failed to send ticket confirmation email to {purchased_ticket.holder_email}: {e}")
+                        # Do not let email failure break the entire transaction,
+                        # but it should be logged for investigation.
 
                     # The client might be redirected by Paystack here. 
                     # This JSON response is for API clients or if Paystack callback is handled server-side then redirected.
