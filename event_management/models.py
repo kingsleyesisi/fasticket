@@ -1,20 +1,8 @@
 import uuid
 from django.db import models
 from django.contrib.auth import get_user_model
-import random
-
+from .utils import generate_unique_event_id, generate_ticket_id
 User = get_user_model()
-
-def generate_unique_event_id():
-    """
-    Generate a unique 8-digit string. This function loops until it finds a number
-    that isn’t already used as an event ID.
-    """
-    while True:
-        new_id = ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', k=8))
-
-        if not Event.objects.filter(id=new_id).exists():
-            return new_id
 
 class Event(models.Model):
     """
@@ -97,6 +85,12 @@ class Tickets(models.Model):
         price (DecimalField): The price of one ticket of this type.
         available (PositiveIntegerField): The number of tickets avaialble (by default it is the quantity of tickets)
     """
+    id = models.CharField(
+    editable=False,
+    primary_key=True,
+    max_length=5,
+    default=generate_ticket_id, 
+    )
     event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="tickets")
     ticket_type = models.CharField(max_length=200)
     quantity = models.PositiveIntegerField()
@@ -108,6 +102,7 @@ class Tickets(models.Model):
     
     def save(self, *args, **kwargs):
         # Only set available on creation if it wasn't provided
+        # by Default avalable will be the quantity of tickets
         if self._state.adding and self.available == 0:
             self.available = self.quantity
         super().save(*args, **kwargs)

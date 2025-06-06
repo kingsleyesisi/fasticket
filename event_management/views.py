@@ -61,7 +61,6 @@ class CreateEvent(APIView):
             if isinstance(data['hosts'], str):
                 try:
                     data['hosts'] = json.loads(data['hosts'])
-                    print(data['hosts'])
                 except json.JSONDecodeError:
                     return Response({'error': "Invalid Json for Host"}, status=status.HTTP_400_BAD_REQUEST)
 

@@ -5,7 +5,7 @@ from rest_framework import serializers
 class TicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tickets
-        fields = ('ticket_type', 'price', 'quantity', 'available')
+        fields = ('id','ticket_type', 'price', 'quantity', 'available')
         # fields = '__all__'
 
 class HostSerializer(serializers.ModelSerializer):

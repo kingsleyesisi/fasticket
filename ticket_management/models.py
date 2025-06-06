@@ -3,11 +3,13 @@ import uuid
 import qrcode
 from io import BytesIO
 from django.core.files.base import ContentFile
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from .utils import generate_shareable_links
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model # Changed from User to get_user_model
 from django.utils import timezone
+from django.utils.crypto import get_random_string # Added
+from event_management.models import Tickets as EventTicketType # Added
+from .utils import generate_ticket_id
+
+User = get_user_model() # Added
 
 class Ticket(models.Model):
     """
@@ -16,7 +18,6 @@ class Ticket(models.Model):
     Fields:
         id (UUIDField): Unique identifier for the ticket (primary key).
         category (CharField): The category of the ticket (e.g., 'event'').
-        image (ImageField): An optional image associated with the ticket.
         price (DecimalField): The price of the ticket.
         ticket_code (CharField): A unique code for the ticket (generated automatically).
         total_tickets (PositiveIntegerField): The number of available tickets of this type.
@@ -38,10 +39,10 @@ class Ticket(models.Model):
         ('refunded', 'Refunded'),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.CharField(max_length=5, primary_key=True, default=generate_ticket_id)  # Changed to CharField for custom ID
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tickets')
+    ticket_type = models.ForeignKey(EventTicketType, on_delete=models.SET_NULL, null=True, blank=True, related_name="purchased_tickets")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    image = models.ImageField(upload_to='images/', null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0.00)
     ticket_code = models.CharField(max_length=10, unique=True, null=True)
     total_tickets = models.PositiveIntegerField(default=1)
@@ -65,9 +66,12 @@ class Ticket(models.Model):
         if self.status == 'paid' and not self.qr_code:
             self.generate_qr_code()
         super().save(*args, **kwargs)
-    
+
     def generate_ticket_code(self):
-        return str(uuid.uuid4())[:10].upper()
+        while True:
+            code = get_random_string(10, allowed_chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+            if not Ticket.objects.filter(ticket_code=code).exists():
+                return code
     
     def generate_qr_code(self):
         qr_data = {
@@ -125,16 +129,7 @@ class EventTicket(Ticket):
         ('ONLINE', 'ONLINE'),
     ]
 
-    title = models.CharField(max_length=255, null=True)
-    description = models.TextField(null=True)
-    event_date = models.DateTimeField()
-    choice = models.CharField(max_length=6, choices=EVENT_CHOICES, default=LIVE)
-    start_date = models.DateTimeField(null=True)
-    end_date = models.DateTimeField(null=True)
-    venue = models.CharField(max_length=255, null=True)
-    available_tickets = models.PositiveIntegerField(default=0)
     max_tickets_per_user = models.PositiveIntegerField(default=4)
 
     def __str__(self):
         return f"{self.id}"
-    

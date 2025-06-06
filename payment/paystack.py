@@ -81,7 +81,8 @@ class Paystack:
 
           verification_data = response.json()
 
-          if verification_data['data']['status'] == 'success':
+          if verification_data['data']['gateway_response'] == 'Successful':
+              print('The verification is successful')
               return True
           
           else: 
