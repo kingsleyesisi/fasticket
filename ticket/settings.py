@@ -7,10 +7,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = Env()
 env.read_env(str(BASE_DIR / '.env'))
-
+nts/u
 # Initialize paystack secret key
-# PAYSTACK_SECRET_KEY = "sk_test_d4e6fc829afddaf9055dd37b84a6e1c7699ce7bc"
-# PAYSTACK_PUBLIC_KEY = "pk_test_7c70bdd43d4c8099aff119101329b4eb3e937d91"
 PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY')
 PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY')
 
@@ -97,7 +95,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://fasticket.onrender.com',
     'http://localhost:8000',
     'https://fasticketss.vercel.app',
-    'http://localhost   :5173'
+    'http://localhost:5173'
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -130,25 +128,25 @@ WSGI_APPLICATION = 'ticket.wsgi.application'
 
 
 # Database
-status = env('ENVIRONMENT', default='sqlite')
-if status == 'local':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-elif status == 'production':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('POSTGRES_DATABASE'),
-            'USER': env('POSTGRES_USER'),
-            'PASSWORD': env('POSTGRES_PASSWORD'),
-            'HOST': env('POSTGRES_HOST', default='localhost'),  # Default to localhost if not set
-            'PORT': env('POSTGRES_PORT', default='5432'),  # Default PostgreSQL port
-        }
-    }
+# status = env('ENVIRONMENT', default='sqlite')
+# if status == 'local':
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': BASE_DIR / 'db.sqlite3',
+#         }
+#     }
+# elif status == 'production':
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': env('POSTGRES_DATABASE'),
+#             'USER': env('POSTGRES_USER'),
+#             'PASSWORD': env('POSTGRES_PASSWORD'),
+#             'HOST': env('POSTGRES_HOST', default='localhost'),  # Default to localhost if not set
+#             'PORT': env('POSTGRES_PORT', default='5432'),  # Default PostgreSQL port
+#         }
+#     }
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
@@ -162,12 +160,12 @@ elif status == 'production':
 
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 
 # Password validation
