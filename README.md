@@ -141,12 +141,6 @@ Follow these steps to get Fasticket up and running on your local machine:
     *   **Event Tickets (`/main/event/`)**:
         *   List/Create: `GET /main/event/`, `POST /main/event/`
         *   Retrieve/Update/Delete: `GET /main/event/<ticket_id>/`, `PUT /main/event/<ticket_id>/`, `DELETE /main/event/<ticket_id>/`
-    *   **Hotel Tickets (`/main/hotel/`)**:
-        *   List/Create: `GET /main/hotel/`, `POST /main/hotel/`
-        *   Retrieve/Update/Delete: `GET /main/hotel/<ticket_id>/`, `PUT /main/hotel/<ticket_id>/`, `DELETE /main/hotel/<ticket_id>/`
-    *   **Travel Tickets (`/main/travel/`)**:
-        *   List/Create: `GET /main/travel/`, `POST /main/travel/`
-        *   Retrieve/Update/Delete: `GET /main/travel/<ticket_id>/`, `PUT /main/travel/<ticket_id>/`, `DELETE /main/travel/<ticket_id>/`
 
 5.  **Payment (`/payments/`)**
 
