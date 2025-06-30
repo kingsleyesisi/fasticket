@@ -1,6 +1,7 @@
 import os 
 from pathlib import Path
 from environ import Env
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -110,7 +111,7 @@ CORS_ALLOW_PROXY = True
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -222,12 +223,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',  # This Ensures that only authenticated users can access the API
     ],
     'DEFAULT_THROTTLE_RATES': {
-    'user': '5/min'  # Limit users to 5 requests per minute
+    'user': '10/min'  # Limit users to  requests per minute
     }
 }
 
-REST_FRAMEWORK = {
-
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=6),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
 STATIC_URL = '/static/'

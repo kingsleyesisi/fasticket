@@ -1,8 +1,7 @@
 from rest_framework import status
-from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
@@ -12,71 +11,42 @@ from django.contrib.auth.models import User
 from rest_framework.throttling import UserRateThrottle
 from .permissions import HasValidTokenPermission
 from django.utils.timezone import now
-import random
 from django.core.mail import EmailMessage
 from datetime import timedelta
 from django.template.loader import render_to_string
 from django.contrib.auth.hashers import make_password
+import random
+
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework import serializers
+
+
 
 # Login View
-class CustomAuthToken(ObtainAuthToken):
-  """
-  Custom authentication token view that extends Django REST Framework's ObtainAuthToken.
-  It allows users to log in using either their username or email.
 
-  Throttle Classes: UserRateThrottle (limits request frequency per user)
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        username_or_email = attrs.get('username') or attrs.get('email')
+        if '@' in username_or_email:
+            try:
+                user = User.objects.get(email=username_or_email)
+                attrs['username'] = user.username
+            except User.DoesNotExist:
+                raise serializers.ValidationError('Invalid credentials')
+        else:
+            attrs['username'] = username_or_email
 
-  Allowed HTTP Methods:
-    - POST
+        data = super().validate(attrs)
+        data['user_id'] = self.user.id
+        data['username'] = self.user.username
+        data['email'] = self.user.email
+        return data
 
-  Request Body (POST):
-    - username (str, optional): User's username or email. If 'email' is also provided, 'username' takes precedence if it's not an email format.
-    - email (str, optional): User's email (used if 'username' is not provided or is not an email).
-    - password (str): User's password.
-
-  Response:
-    - 200 OK: {'token': token.key, 'user_id': user.pk, 'username': user.username, 'email': user.email}
-    - 400 Bad Request: {'error': 'Incorrect password'} or {'error': 'User Does Not Exist'}
-    - 500 Internal Server Error: {'error': str(e)} (for other exceptions)
-  """
-  throttle_classes = [UserRateThrottle]
-
-  def post(self, request, *args, **kwargs):
-    try:
-      username_or_email = request.data.get('username') or request.data.get('email').lower()
-      password = request.data.get('password')
-      
-      user = User.objects.filter(email=username_or_email).first() if '@' in username_or_email else User.objects.filter(username=username_or_email).first()
-      if user:
-        if not user.check_password(password):
-          print("Incorrect Password")
-          return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
-
-        token, created = Token.objects.get_or_create(user=user)
-        
-        # This check and delete any token older than 6 hours
-        if token.created < now() - timedelta(hours=6):
-           token.delete()
-           token = Token.objects.create(user=user)
-           print(token)
-
-        user.last_login = now()
-        user.save(update_fields=["last_login"])
-        print(f'logged in successful {user.username}')  # Log to Terminal for debugging
-        return Response({
-          'token': token.key,
-          'user_id': user.pk,
-          'username': user.username,
-          'email': user.email,
-        })
-      else:
-        print("User Does Not Exist") # Log to Terminal for debugging
-        return Response({'error': 'User Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
-    except User.DoesNotExist:
-      return Response({'error': 'User Does Not Exist'}, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-      print(e)  # Log to Terminal for debugging
-      return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [UserRateThrottle]
 
 # Registration OTP
 class InitiateRegistration(APIView):
@@ -156,72 +126,56 @@ class InitiateRegistration(APIView):
         )
 
 class RegisterUser(APIView):
-  """
-  API view to complete user registration by verifying the OTP.
+    permission_classes = [AllowAny]
 
-  Permissions: AllowAny
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        otp = request.data.get('otp')
 
-  Allowed HTTP Methods:
-    - POST
+        if not email or not otp: 
+            print('Please provide email and OTP') # Debug
+            return Response({'error': 'Please provide both email and OTP'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            pending_registration = RegistrationOTP.objects.get(email=email, otp=otp)
+        except RegistrationOTP.DoesNotExist:
+            print('Invalid OTP')
+            return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not pending_registration.is_valid():
+            return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create the real user
+        user = User(
+            username=pending_registration.username,
+            email=pending_registration.email,
+            first_name=pending_registration.first_name,
+            last_name=pending_registration.last_name
+        )
+        user.password = pending_registration.password  # Assign already hashed password
+        user.save()
 
-  Request Body (POST):
-    - email (str): User's email address.
-    - otp (str): The OTP received by the user.
+        UserProfile.objects.create(
+            user=user,
+            phone=pending_registration.phone,
+            company=pending_registration.company,
+            location=pending_registration.location
+        )
 
-  Response:
-    - 201 Created: {"message": "Registration successful", "token": token.key, "user_id": user.pk, "username": user.username, "email": user.email}
-    - 400 Bad Request: {'error': 'Please provide both email and OTP'} or {'error': 'Invalid OTP or email'} or {'error': 'OTP has expired'}
-  """
-  permission_classes = [AllowAny]
+        # Generate access and refresh tokens
+        refresh = RefreshToken.for_user(user)
 
-  def post(self, request, *args, **kwargs):
-      email = request.data.get('email')
-      otp = request.data.get('otp')
+        pending_registration.delete()
 
-      if not email or not otp: 
-         print('Please provid email and OTP') # Debug
-         return Response({'error': 'Please provide both email and OTP'}, status=status.HTTP_400_BAD_REQUEST)
-      
-      try:
-         pending_registration = RegistrationOTP.objects.get(email=email, otp=otp)
-  
-      except RegistrationOTP.DoesNotExist:
-        print('Invalid OTP')
-        return Response({'error': 'Invalid OTP or email'}, status=status.HTTP_400_BAD_REQUEST)
-      
-      if not pending_registration.is_valid():
-        return Response({'error': 'OTP has expired'}, status=status.HTTP_400_BAD_REQUEST)
-      
-      # Create the real user
-      # Use the pre-hashed password from pending_registration
-      user = User(
-          username=pending_registration.username,
-          email=pending_registration.email,
-          first_name=pending_registration.first_name,
-          last_name=pending_registration.last_name
-      )
-      user.password = pending_registration.password  # Assign already hashed password
-      user.save()
-
-      UserProfile.objects.create(
-          user=user,
-          phone=pending_registration.phone,
-          company=pending_registration.company,
-          location=pending_registration.location
-      )
-
-      # Generate a new token for the user
-      token, created = Token.objects.get_or_create(user=user)
-
-      pending_registration.delete()
-
-      return Response({
-         "message": "Registration successful",
-         "token": token.key,
-         "user_id": user.pk,
-          "username": user.username,
-          "email": user.email
-      }, status=status.HTTP_201_CREATED)
+        return Response({
+            "message": "Registration successful",
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user_id": user.pk,
+            "username": user.username,
+            "email": user.email
+        }, status=status.HTTP_201_CREATED)
+    
 
 class UpdateProfile(APIView):
   """
@@ -291,60 +245,43 @@ class ResetPassword(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VerifyOTPView(APIView):
-  """
-  API view to verify the OTP and reset the user's password.
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            new_password = serializer.validated_data['new_password']
 
-  Permissions: AllowAny (implicitly, not specified but typical for this action)
+            user = User.objects.filter(email=email).first()
+            if not user:
+                print('Invalid Email')
+                return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
 
-  Allowed HTTP Methods:
-    - POST
+            otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
+            if not otp_record or not otp_record.is_valid():
+                return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
 
-  Request Body (POST):
-    - email (str): User's email address.
-    - otp (str): The OTP received by the user.
-    - new_password (str): The new password for the user.
-    (Handled by VerifyOTPSerializer)
+            # Reset password
+            user.set_password(new_password)
+            user.save()
+            otp_record.delete()
 
-  Response:
-    - 200 OK: {"message": "Password reset successful", "token": new_token.key}
-    - 400 Bad Request: serializer.errors or {"error": "Invalid email"} or {"error": "Invalid or expired OTP"}
-  """
-  def post(self, request):
-    serializer = VerifyOTPSerializer(data=request.data)
-    if serializer.is_valid():
-      email = serializer.validated_data['email']
-      otp = serializer.validated_data['otp']
-      new_password = serializer.validated_data['new_password']
+            # Generate access and refresh tokens
+            refresh = RefreshToken.for_user(user)
 
-      user = User.objects.filter(email=email).first()
-      if not user:
-        print('Invalid Email')
-        return Response({"error": "Invalid email"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "message": "Password reset successful",
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_200_OK)
 
-      otp_record = PasswordResetOTP.objects.filter(user=user, otp=otp).first()
-      if not otp_record or not otp_record.is_valid():
-        return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)
-
-      # Reset password
-      user.set_password(new_password)
-      user.save()
-      otp_record.delete()  # Remove OTP after use
-
-      Token.objects.filter(user=user).delete()
-      new_token, created = Token.objects.get_or_create(user=user)
-
-      return Response({
-        "message": "Password reset successful",
-        "token": new_token.key
-      }, status=status.HTTP_200_OK)
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
 
 
 # Test bearer token (for Debugging)
 @api_view(['GET'])
-@permission_classes([HasValidTokenPermission])
+@permission_classes([IsAuthenticated])
 def test(request):
     """
     A simple test endpoint to check if a bearer token is valid.
