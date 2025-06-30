@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import permission_classes
 from rest_framework import status, viewsets
@@ -15,7 +15,7 @@ class CreateEvent(APIView):
     """
     API view to create a new event.
 
-    Authentication: TokenAuthentication
+    Authentication: JWTAuthentication
     Permissions: IsAuthenticated
     Parser Classes: MultiPartParser, FormParser, JSONParser
 
@@ -42,7 +42,7 @@ class CreateEvent(APIView):
         - 200 OK: {"message": "Event created successfully!", "data": EventSerializer.data}
         - 400 Bad Request: {"error": "Invalid JSON for tickets."} or {"error": "Invalid Json for Host"} or serializer.errors
     """
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
@@ -113,26 +113,21 @@ class GetParticularEvent(APIView):
 
     Response (GET):
         - 200 OK: {"status": "success", "data": EventSerializer.data}
-        - 204 No Content: {'status': "Error", "data": "Event not found"} (If event does not exist)
-        - 404 Not Found: If event does not exist (from get_object_or_404).
+        - 404 Not Found: If event does not exist (handled by get_object_or_404).
     """
-
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
-        if event: # This check is somewhat redundant due to get_object_or_404
-            serializer = EventSerializer(event)
-            return Response({"status": "success", "data": serializer.data})
-        # This part might not be reached if get_object_or_404 raises an exception first.
-        return Response({'status': "Error", "data": "Event not found"}, status=status.HTTP_204_NO_CONTENT)
+        serializer = EventSerializer(event)
+        return Response({"status": "success", "data": serializer.data})
 
 class UpdateEventView(APIView):
     """
     API view to update an existing event.
 
-    Authentication: TokenAuthentication
+    Authentication: JWTAuthentication
     Permissions: IsAuthenticated (Only the event creator can update)
 
     Allowed HTTP Methods:
@@ -150,7 +145,7 @@ class UpdateEventView(APIView):
         - 403 Forbidden: {"message": "You do not have permission to update this event"}
         - 404 Not Found: If event does not exist.
     """
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def put(self, request, pk):
@@ -171,7 +166,7 @@ class DeleteEvent(APIView):
     """
     API view to delete an existing event.
 
-    Authentication: TokenAuthentication
+    Authentication: JWTAuthentication
     Permissions: IsAuthenticated (Only the event creator can delete)
 
     Allowed HTTP Methods:
@@ -185,7 +180,7 @@ class DeleteEvent(APIView):
         - 403 Forbidden: {"error": "You do not have permission to delete this event"}
         - 404 Not Found: If event does not exist.
     """
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     def delete(self, request, pk):
         event = get_object_or_404(Event, pk=pk)
