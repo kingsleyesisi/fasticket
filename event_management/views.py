@@ -76,7 +76,18 @@ class CreateEvent(APIView):
 
         serializer = EventSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            event = serializer.save()
+            
+            # Auto-create a default free ticket type for free events if no tickets provided
+            if not event.is_paid and not event.tickets.exists():
+                Tickets.objects.create(
+                    event=event,
+                    ticket_type="General Admission",
+                    quantity=event.capacity,
+                    price=0.00
+                )
+                print(f'Auto-created free ticket type for event {event.id}')
+            
             print('event created successfully')
             return Response(
                 {"message": "Event created successfully!", "data": serializer.data},
@@ -211,30 +222,30 @@ class RegisterForFreeEvent(APIView):
     
     Request Body (POST):
         - event_id (str): The ID of the event to register for.
-        - ticket_type_id (str): The ID of the ticket type to register for.
         - holder_name (str): Name of the person attending.
         - holder_email (str): Email of the person attending.
         - holder_phone (str, optional): Phone number of the person attending.
+        - ticket_type_id (str, optional): Specific ticket type ID (if not provided, uses first available free ticket)
     
     Response (POST):
         - 200 OK: {"message": "Registration successful!", "ticket_id": ticket_id, "ticket_code": ticket_code}
         - 400 Bad Request: Various error messages for validation failures
-        - 404 Not Found: If event or ticket type doesn't exist
+        - 404 Not Found: If event doesn't exist
     """
     authentication_classes = []
     permission_classes = [AllowAny]
 
     def post(self, request):
         event_id = request.data.get('event_id')
-        ticket_type_id = request.data.get('ticket_type_id')
         holder_name = request.data.get('holder_name')
         holder_email = request.data.get('holder_email')
         holder_phone = request.data.get('holder_phone', '')
+        ticket_type_id = request.data.get('ticket_type_id')  # Optional
 
         # Validate required fields
-        if not all([event_id, ticket_type_id, holder_name, holder_email]):
+        if not all([event_id, holder_name, holder_email]):
             return Response({
-                'error': 'Please provide event_id, ticket_type_id, holder_name, and holder_email.'
+                'error': 'Please provide event_id, holder_name, and holder_email.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -250,33 +261,48 @@ class RegisterForFreeEvent(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get the ticket type
-            ticket_type = Tickets.objects.get(id=ticket_type_id, event=event)
-        except Tickets.DoesNotExist:
-            return Response({
-                'error': 'Ticket type not found for this event.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        # Check if ticket type price is 0 (free)
-        if ticket_type.price > 0:
-            return Response({
-                'error': 'This ticket type is not free. Please use the payment endpoint.'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
             with transaction.atomic():
-                # Check availability and decrement
-                ticket_type_locked = Tickets.objects.select_for_update().get(id=ticket_type_id)
-                
-                if ticket_type_locked.available <= 0:
+                # Get available free ticket type
+                if ticket_type_id:
+                    # Use specific ticket type if provided
+                    try:
+                        ticket_type = Tickets.objects.select_for_update().get(
+                            id=ticket_type_id, 
+                            event=event,
+                            price=0.00
+                        )
+                    except Tickets.DoesNotExist:
+                        return Response({
+                            'error': 'Free ticket type not found for this event.'
+                        }, status=status.HTTP_404_NOT_FOUND)
+                else:
+                    # Auto-select first available free ticket type
+                    ticket_type = Tickets.objects.select_for_update().filter(
+                        event=event,
+                        price=0.00,
+                        available__gt=0
+                    ).first()
+                    
+                    if not ticket_type:
+                        # Create a default free ticket type if none exists
+                        ticket_type = Tickets.objects.create(
+                            event=event,
+                            ticket_type="General Admission",
+                            quantity=event.capacity,
+                            price=0.00
+                        )
+                        print(f"Auto-created free ticket type for event {event.id}")
+
+                # Check availability
+                if ticket_type.available <= 0:
                     return Response({
-                        'error': 'This ticket type is sold out.'
+                        'error': 'This event is fully booked.'
                     }, status=status.HTTP_400_BAD_REQUEST)
 
                 # Decrement available tickets
-                ticket_type_locked.available = F('available') - 1
-                ticket_type_locked.save(update_fields=['available'])
-                ticket_type_locked.refresh_from_db()
+                ticket_type.available = F('available') - 1
+                ticket_type.save(update_fields=['available'])
+                ticket_type.refresh_from_db()
 
                 # Get user if authenticated
                 user = request.user if request.user.is_authenticated else None
@@ -284,7 +310,7 @@ class RegisterForFreeEvent(APIView):
                 # Create the purchased ticket
                 purchased_ticket = PurchasedTicket.objects.create(
                     user=user,
-                    ticket_type=ticket_type_locked,
+                    ticket_type=ticket_type,
                     category='event',
                     price=0.00,  # Free ticket
                     status='paid',  # Set as paid since it's free
@@ -295,14 +321,14 @@ class RegisterForFreeEvent(APIView):
 
                 # Send registration confirmation email
                 try:
-                    self._send_registration_email(purchased_ticket, event, ticket_type_locked)
+                    self._send_registration_email(purchased_ticket, event, ticket_type)
                     print(f"Registration confirmation email sent to {holder_email}")
                 except Exception as e:
                     print(f"Failed to send registration email to {holder_email}: {e}")
 
                 # Send ticket confirmation email
                 try:
-                    self._send_ticket_confirmation_email(purchased_ticket, event, ticket_type_locked)
+                    self._send_ticket_confirmation_email(purchased_ticket, event, ticket_type)
                     print(f"Ticket confirmation email sent to {holder_email}")
                 except Exception as e:
                     print(f"Failed to send ticket confirmation email to {holder_email}: {e}")
@@ -312,6 +338,7 @@ class RegisterForFreeEvent(APIView):
                     "ticket_id": purchased_ticket.id,
                     "ticket_code": purchased_ticket.ticket_code,
                     "event_name": event.title,
+                    "ticket_type": ticket_type.ticket_type,
                     "is_free": True
                 }, status=status.HTTP_200_OK)
 
