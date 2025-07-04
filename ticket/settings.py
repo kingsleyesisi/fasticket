@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
 
+    'storages',
+
     # Local apps
     'Profile',
     'event_management',
@@ -241,3 +243,33 @@ MEDIA_URL = '/media/'
 
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
+
+
+
+CLOUDFLARE_R2_BUCKET = env('CLOUDFLARE_R2_BUCKET')
+CLOUDFLARE_R2_ACCESS_KEY = env('CLOUDFLARE_R2_ACCESS_KEY')
+CLOUDFLARE_R2_SECRET_KEY = env('CLOUDFLARE_R2_SECRET_KEY')
+CLOUDFLARE_R2_BUCKET_ENDPOINT = env('CLOUDFLARE_R2_BUCKET_ENDPOINT')
+
+CLOUDFLARE_R2_CONFIG_OPTIONS = {
+    'bucket_name': CLOUDFLARE_R2_BUCKET,
+    'access_key': CLOUDFLARE_R2_ACCESS_KEY,
+    'secret_key': CLOUDFLARE_R2_SECRET_KEY,
+    'endpoint_url': CLOUDFLARE_R2_BUCKET_ENDPOINT,
+    'default_acl': 'public-read',
+    'signature_version': 's3v4',
+    'region_name': 'auto',
+    'addressing_style': 'virtual',
+}
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'helper.cloudflare.storages.MediaFileStorage',
+        'OPTIONS': CLOUDFLARE_R2_CONFIG_OPTIONS,
+    },
+    'staticfiles': {
+        'BACKEND': 'helper.cloudflare.storages.StaticFileStorage',
+        'OPTIONS': CLOUDFLARE_R2_CONFIG_OPTIONS,
+    },
+}
