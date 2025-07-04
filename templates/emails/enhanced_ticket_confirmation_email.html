@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Event Ticket</title>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 650px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+            position: relative;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 10px solid #764ba2;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .ticket-icon {
+            width: 60px;
+            height: 60px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+        .main {
+            padding: 40px 30px;
+        }
+        .event-banner {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .ticket-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .ticket-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+            background-size: 20px 20px;
+        }
+        .ticket-content {
+            position: relative;
+            z-index: 1;
+        }
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .event-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .ticket-type-badge {
+            background-color: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+        }
+        .ticket-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .detail-item {
+            background-color: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        .detail-label {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .detail-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .qr-section {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .qr-code {
+            max-width: 200px;
+            height: auto;
+            margin: 20px auto;
+            border: 3px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .ticket-code {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 18px;
+            letter-spacing: 2px;
+            margin: 15px 0;
+            display: inline-block;
+        }
+        .important-info {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .important-info h3 {
+            color: #92400e;
+            margin-top: 0;
+        }
+        .footer {
+            background-color: #f1f5f9;
+            text-align: center;
+            padding: 30px 20px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        @media (max-width: 600px) {
+            .ticket-details {
+                grid-template-columns: 1fr;
+            }
+            .ticket-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="ticket-icon">🎫</div>
+            <h1>Your Event Ticket</h1>
+        </header>
+        <main class="main">
+            {% if ticket_details.holder_name %}
+                <p style="font-size: 18px; color: #1e293b; margin-bottom: 30px;">
+                    Hello <strong>{{ ticket_details.holder_name }}</strong>,
+                </p>
+            {% else %}
+                <p style="font-size: 18px; color: #1e293b; margin-bottom: 30px;">
+                    Hello,
+                </p>
+            {% endif %}
+
+            <p style="color: #475569; font-size: 16px;">
+                {% if ticket_details.is_free %}
+                    Congratulations! You have successfully registered for <strong>{{ ticket_details.event_name }}</strong>. 
+                {% else %}
+                    Thank you for your purchase! Here's your ticket for <strong>{{ ticket_details.event_name }}</strong>.
+                {% endif %}
+            </p>
+
+            {% if event_banner_url %}
+                <img src="{{ event_banner_url }}" alt="{{ ticket_details.event_name }} Banner" class="event-banner">
+            {% endif %}
+
+            <div class="ticket-card">
+                <div class="ticket-content">
+                    <div class="ticket-header">
+                        <h2 class="event-title">{{ ticket_details.event_name }}</h2>
+                        <div class="ticket-type-badge">{{ ticket_details.ticket_type }}</div>
+                    </div>
+                    
+                    <div class="ticket-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Date & Time</div>
+                            <div class="detail-value">
+                                {{ ticket_details.event_date }}<br>
+                                {{ ticket_details.event_time }}
+                            </div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Location</div>
+                            <div class="detail-value">{{ ticket_details.event_location|default:"TBA" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Ticket Holder</div>
+                            <div class="detail-value">{{ ticket_details.holder_name }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">
+                                {% if ticket_details.is_free %}
+                                    Registration
+                                {% else %}
+                                    Price Paid
+                                {% endif %}
+                            </div>
+                            <div class="detail-value">
+                                {% if ticket_details.is_free %}
+                                    FREE
+                                {% else %}
+                                    ₦{{ ticket_details.price }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="qr-section">
+                <h3 style="color: #1e293b; margin-top: 0;">Your Entry Pass</h3>
+                <p style="color: #64748b; margin-bottom: 20px;">
+                    Present this QR code at the event entrance for quick check-in
+                </p>
+                
+                {% if qr_code_url %}
+                    <img src="{{ qr_code_url }}" alt="Ticket QR Code" class="qr-code">
+                {% endif %}
+                
+                <div class="ticket-code">{{ ticket_details.ticket_code }}</div>
+                
+                <p style="color: #64748b; font-size: 14px; margin-top: 15px;">
+                    Ticket ID: {{ ticket_details.ticket_id }}
+                </p>
+            </div>
+
+            <div class="important-info">
+                <h3>Important Information</h3>
+                <ul style="margin: 0; color: #92400e;">
+                    <li>Please arrive at least 30 minutes before the event starts</li>
+                    <li>Bring a valid ID that matches the ticket holder name</li>
+                    <li>This ticket is non-transferable and non-refundable</li>
+                    <li>Screenshots of this email are acceptable for entry</li>
+                    {% if not ticket_details.is_free %}
+                        <li>Keep your payment reference for any inquiries: {{ ticket_details.payment_reference|default:"N/A" }}</li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <p style="color: #475569; margin-top: 30px;">
+                We're excited to see you at the event! If you have any questions, please contact our support team.
+            </p>
+        </main>
+        <footer class="footer">
+            <p style="color: #374151; margin: 20px 0; font-weight: 600;">See you at the event!</p>
+            <p style="color: #374151; font-weight: bold; margin: 10px 0;">The Fastickets Team</p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                Visit our <a href="{{ frontend_url | default:'#' }}" style="color: #667eea;">website</a> for more events.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

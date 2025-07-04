@@ -8,5 +8,6 @@ urlpatterns = [
     path('delete/<str:pk>', views.DeleteEvent.as_view(), name='delete'),
     path('getAll', views.GetEvent.as_view(), name='get_all'), # Get all events
     path('get/<str:pk>', views.GetParticularEvent.as_view(), name='get'),
+    path('register-free', views.RegisterForFreeEvent.as_view(), name='register_free'),
     path('view', views.CreateView, name='view'),
 ]

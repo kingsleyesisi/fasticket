@@ -9,7 +9,17 @@ from django.http import HttpResponse
 from .serializers import EventSerializer, TicketSerializer
 from .models import Event, Tickets
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from ticket_management.models import Ticket as PurchasedTicket
+from django.db import transaction
+from django.db.models import F
+from django.utils import timezone
 import json
+
+User = get_user_model()
 
 class CreateEvent(APIView):
     """
@@ -188,6 +198,208 @@ class DeleteEvent(APIView):
             return Response({"error": "You do not have permission to delete this event"}, status=status.HTTP_403_FORBIDDEN)
         event.delete()
         return Response({"message": "Event deleted successfully"}, status=status.HTTP_200_OK)
+
+class RegisterForFreeEvent(APIView):
+    """
+    API view to register for free events.
+    
+    Authentication: None (allows both authenticated and guest users)
+    Permissions: AllowAny
+    
+    Allowed HTTP Methods:
+        - POST
+    
+    Request Body (POST):
+        - event_id (str): The ID of the event to register for.
+        - ticket_type_id (str): The ID of the ticket type to register for.
+        - holder_name (str): Name of the person attending.
+        - holder_email (str): Email of the person attending.
+        - holder_phone (str, optional): Phone number of the person attending.
+    
+    Response (POST):
+        - 200 OK: {"message": "Registration successful!", "ticket_id": ticket_id, "ticket_code": ticket_code}
+        - 400 Bad Request: Various error messages for validation failures
+        - 404 Not Found: If event or ticket type doesn't exist
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        event_id = request.data.get('event_id')
+        ticket_type_id = request.data.get('ticket_type_id')
+        holder_name = request.data.get('holder_name')
+        holder_email = request.data.get('holder_email')
+        holder_phone = request.data.get('holder_phone', '')
+
+        # Validate required fields
+        if not all([event_id, ticket_type_id, holder_name, holder_email]):
+            return Response({
+                'error': 'Please provide event_id, ticket_type_id, holder_name, and holder_email.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get the event
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if event is free
+        if event.is_paid:
+            return Response({
+                'error': 'This is a paid event. Please use the payment endpoint.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get the ticket type
+            ticket_type = Tickets.objects.get(id=ticket_type_id, event=event)
+        except Tickets.DoesNotExist:
+            return Response({
+                'error': 'Ticket type not found for this event.'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Check if ticket type price is 0 (free)
+        if ticket_type.price > 0:
+            return Response({
+                'error': 'This ticket type is not free. Please use the payment endpoint.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            with transaction.atomic():
+                # Check availability and decrement
+                ticket_type_locked = Tickets.objects.select_for_update().get(id=ticket_type_id)
+                
+                if ticket_type_locked.available <= 0:
+                    return Response({
+                        'error': 'This ticket type is sold out.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Decrement available tickets
+                ticket_type_locked.available = F('available') - 1
+                ticket_type_locked.save(update_fields=['available'])
+                ticket_type_locked.refresh_from_db()
+
+                # Get user if authenticated
+                user = request.user if request.user.is_authenticated else None
+
+                # Create the purchased ticket
+                purchased_ticket = PurchasedTicket.objects.create(
+                    user=user,
+                    ticket_type=ticket_type_locked,
+                    category='event',
+                    price=0.00,  # Free ticket
+                    status='paid',  # Set as paid since it's free
+                    holder_name=holder_name,
+                    holder_email=holder_email,
+                    holder_phone=holder_phone,
+                )
+
+                # Send registration confirmation email
+                try:
+                    self._send_registration_email(purchased_ticket, event, ticket_type_locked)
+                    print(f"Registration confirmation email sent to {holder_email}")
+                except Exception as e:
+                    print(f"Failed to send registration email to {holder_email}: {e}")
+
+                # Send ticket confirmation email
+                try:
+                    self._send_ticket_confirmation_email(purchased_ticket, event, ticket_type_locked)
+                    print(f"Ticket confirmation email sent to {holder_email}")
+                except Exception as e:
+                    print(f"Failed to send ticket confirmation email to {holder_email}: {e}")
+
+                return Response({
+                    "message": "Registration successful!",
+                    "ticket_id": purchased_ticket.id,
+                    "ticket_code": purchased_ticket.ticket_code,
+                    "event_name": event.title,
+                    "is_free": True
+                }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(f"Unexpected error during free event registration: {e}")
+            return Response({
+                'error': 'An unexpected error occurred during registration. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _send_registration_email(self, ticket, event, ticket_type):
+        """Send registration confirmation email for free events."""
+        email_context = {
+            'registration_details': {
+                'name': ticket.holder_name,
+                'event_name': event.title,
+                'ticket_type': ticket_type.ticket_type,
+                'registration_date': timezone.now().strftime('%B %d, %Y at %I:%M %p'),
+                'event_date': event.start_date.strftime('%B %d, %Y'),
+                'event_time': event.start_time.strftime('%I:%M %p'),
+                'event_location': event.location,
+            }
+        }
+        
+        subject = f"Registration Successful - {event.title}"
+        html_message = render_to_string('emails/free_event_registration_email.html', email_context)
+        
+        plain_message = (
+            f"Hello {ticket.holder_name},\n\n"
+            f"Congratulations! You have successfully registered for {event.title}.\n"
+            f"Event Date: {event.start_date.strftime('%B %d, %Y')}\n"
+            f"Event Time: {event.start_time.strftime('%I:%M %p')}\n"
+            f"Location: {event.location or 'TBA'}\n\n"
+            f"Your ticket confirmation will be sent separately.\n\n"
+            f"Thank you,\nThe Fastickets Team"
+        )
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [ticket.holder_email],
+            html_message=html_message,
+            fail_silently=False
+        )
+
+    def _send_ticket_confirmation_email(self, ticket, event, ticket_type):
+        """Send ticket confirmation email with QR code."""
+        email_context = {
+            'ticket_details': {
+                'event_name': event.title,
+                'ticket_type': ticket_type.ticket_type,
+                'price': ticket.price,
+                'ticket_code': ticket.ticket_code,
+                'ticket_id': ticket.id,
+                'holder_name': ticket.holder_name,
+                'holder_email': ticket.holder_email,
+                'event_date': event.start_date.strftime('%B %d, %Y'),
+                'event_time': event.start_time.strftime('%I:%M %p'),
+                'event_location': event.location,
+                'is_free': True,
+            },
+            'event_banner_url': event.banner.url if event.banner else None,
+            'qr_code_url': ticket.qr_code.url if ticket.qr_code else None,
+            'frontend_url': settings.FRONTEND_URL if hasattr(settings, 'FRONTEND_URL') else '#'
+        }
+        
+        subject = f"Your Ticket for {event.title}"
+        html_message = render_to_string('emails/enhanced_ticket_confirmation_email.html', email_context)
+        
+        plain_message = (
+            f"Hello {ticket.holder_name},\n\n"
+            f"Here's your ticket for {event.title}:\n"
+            f"Ticket Code: {ticket.ticket_code}\n"
+            f"Event Date: {event.start_date.strftime('%B %d, %Y')}\n"
+            f"Event Time: {event.start_time.strftime('%I:%M %p')}\n"
+            f"Location: {event.location or 'TBA'}\n\n"
+            f"Please bring this ticket code for entry.\n\n"
+            f"Thank you,\nThe Fastickets Team"
+        )
+        
+        send_mail(
+            subject,
+            plain_message,
+            settings.DEFAULT_FROM_EMAIL,
+            [ticket.holder_email],
+            html_message=html_message,
+            fail_silently=False
+        )
 
 def CreateView(request):
     """

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Successful</title>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            background-color: #10b981;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+        .main {
+            padding: 40px 30px;
+        }
+        .purchase-details {
+            background-color: #f8fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 18px;
+            color: #667eea;
+        }
+        .detail-label {
+            color: #64748b;
+            font-weight: 500;
+        }
+        .detail-value {
+            color: #1e293b;
+            font-weight: 600;
+        }
+        .next-steps {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .next-steps h3 {
+            color: #92400e;
+            margin-top: 0;
+        }
+        .footer {
+            background-color: #f1f5f9;
+            text-align: center;
+            padding: 30px 20px;
+            color: #64748b;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .reference-number {
+            background-color: #e0e7ff;
+            color: #3730a3;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="success-icon">✓</div>
+            <h1>Payment Successful!</h1>
+        </header>
+        <main class="main">
+            <p style="font-size: 18px; color: #1e293b; margin-bottom: 30px;">
+                Hello <strong>{{ payment_details.name }}</strong>,
+            </p>
+            
+            <p style="color: #475569; font-size: 16px;">
+                Great news! Your payment has been successfully processed. Here are the details of your purchase:
+            </p>
+
+            <div class="purchase-details">
+                <h3 style="margin-top: 0; color: #1e293b;">Purchase Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Event:</span>
+                    <span class="detail-value">{{ payment_details.event_name }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Ticket Type:</span>
+                    <span class="detail-value">{{ payment_details.ticket_type }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Amount Paid:</span>
+                    <span class="detail-value">₦{{ payment_details.amount }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payment Reference:</span>
+                    <span class="detail-value">
+                        <span class="reference-number">{{ payment_details.reference }}</span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payment Date:</span>
+                    <span class="detail-value">{{ payment_details.payment_date }}</span>
+                </div>
+            </div>
+
+            <div class="next-steps">
+                <h3>What's Next?</h3>
+                <p style="margin: 0; color: #92400e;">
+                    🎫 Your ticket confirmation with QR code will be sent to you in a separate email shortly.<br>
+                    📧 Please check your inbox for the ticket details.<br>
+                    💾 Save your ticket confirmation email for event entry.
+                </p>
+            </div>
+
+            <p style="color: #475569; margin-top: 30px;">
+                If you have any questions about your purchase, please don't hesitate to contact our support team.
+            </p>
+        </main>
+        <footer class="footer">
+            <p style="color: #374151; margin: 20px 0; font-weight: 600;">Thank you for choosing us!</p>
+            <p style="color: #374151; font-weight: bold; margin: 10px 0;">The Fastickets Team</p>
+            <p style="font-size: 12px; margin-top: 20px;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

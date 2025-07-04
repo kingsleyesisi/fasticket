@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string # Added
 from event_management.models import Tickets as EventTicketType # Added
 from .utils import generate_ticket_id
+import json
 
 User = get_user_model() # Added
 
@@ -74,15 +75,36 @@ class Ticket(models.Model):
                 return code
     
     def generate_qr_code(self):
+        # Enhanced QR code data with more ticket information
         qr_data = {
+            'ticket_id': self.id,
             'ticket_code': self.ticket_code,
-            'category': self.category,
             'holder_name': self.holder_name,
+            'event_name': self.ticket_type.event.title if self.ticket_type else 'N/A',
+            'ticket_type': self.ticket_type.ticket_type if self.ticket_type else 'N/A',
+            'price': str(self.price),
             'status': self.status,
+            'category': self.category,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
         }
-        qr = qrcode.make(str(qr_data))
+        
+        # Convert to JSON string for QR code
+        qr_content = json.dumps(qr_data, indent=2)
+        
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_content)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        qr_image = qr.make_image(fill_color="black", back_color="white")
+        
         buffer = BytesIO()
-        qr.save(buffer, format='PNG')
+        qr_image.save(buffer, format='PNG')
         self.qr_code.save(f'qr_{self.ticket_code}.png', ContentFile(buffer.getvalue()), save=False)
 
     def check_in(self):
@@ -98,8 +120,8 @@ class Ticket(models.Model):
             return False
         
         transfer_record = {
-            'from_user': self.user.id,
-            'to_user': new_user.id,
+            'from_user': self.user.id if self.user else None,
+            'to_user': new_user.id if new_user else None,
             'transfer_date': timezone.now().isoformat(),
             'previous_holder': self.holder_name,
         }
