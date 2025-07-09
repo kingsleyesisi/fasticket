@@ -180,7 +180,7 @@ The project supports Cloudflare R2 for file storage. Configure the R2 settings i
 
 ### Base URL
 ```
-http://localhost:8000/
+http://localhost:5000/
 ```
 
 ### Authentication
@@ -567,7 +567,7 @@ Authorization: Bearer <your_jwt_token>
   "ticket_id": "12345",
   "ticket_code": "ABCD123456",
   "event_name": "Free Workshop",
-  "ticket_type": "General Admission",
+  "ticket_type": "Regular",
   "is_free": true
 }
 ```

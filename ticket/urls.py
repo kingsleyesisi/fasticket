@@ -8,7 +8,7 @@ urlpatterns = [
     path('', include('Profile.urls')),
     path('payments/', include('payment.urls')),
     path('events/', include('event_management.urls')),
-    path('main/', include('ticket_management.urls')),
+    path('api/', include('ticket_management.urls')),
 ]
 
 if settings.DEBUG:

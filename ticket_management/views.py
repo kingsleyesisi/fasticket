@@ -12,11 +12,14 @@ import os
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
     serializer_class = serializers.TicketSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
         if self.action in ['list', 'retrieve']:
-            return Ticket.objects.filter(user=self.request.user)
+            if self.request.user.is_authenticated:
+                return Ticket.objects.filter(user=self.request.user)
+            else:
+                return Ticket.objects.none()
         return Ticket.objects.all()
 
     @action(detail=True, methods=['post'])

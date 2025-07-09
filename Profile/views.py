@@ -73,56 +73,6 @@ class InitiateRegistration(APIView):
     """
     permission_classes = [AllowAny]
 
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        email = request.data.get('email')
-        first_name = request.data.get('first_name')
-        last_name = request.data.get('last_name')
-        phone = request.data.get('phone')
-        company = request.data.get('company')
-        location = request.data.get('location')
-
-        if not all([username, password, email, first_name, last_name, phone]):
-            print('all field required') # for deugging 
-            return Response(
-                {'error': 'Please provide all required fields'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if User.objects.filter(username=username).exists():
-            print('Username already Exist') # for debuging
-            return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
-        if User.objects.filter(email=email).exists():
-            print('email Aready exist') # for debugging
-            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
-
-        otp = f"{random.randint(100000, 999999)}"
-        hashed_password = make_password(password)
-
-        RegistrationOTP.objects.create(
-            username=username,
-            password=hashed_password,
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            phone=phone,
-            company=company or "",
-            location=location or "",
-            otp=otp
-        )
-        
-        subject = "Registration Confirmation"
-        context = {'otp': otp}
-        body = render_to_string('emails/registration_mail.html', context)
-        mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to=['support@fasticket.com'], to=[email])
-        mail.content_subtype = 'html'
-        mail.send()
-        
-        return Response(
-            {"message": "OTP sent to your email. Please verify to complete registration."},
-            status=status.HTTP_200_OK
-        )
 
 class RegisterUser(APIView):
     permission_classes = [AllowAny]
@@ -295,3 +245,57 @@ def test(request):
       - 401 Unauthorized (or other appropriate status from HasValidTokenPermission): If access is denied.
     """
     return Response({"message": "Access granted"}, status=status.HTTP_200_OK)
+
+
+
+def post(self, request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
+    first_name = request.data.get('first_name')
+    last_name = request.data.get('last_name')
+    phone = request.data.get('phone')
+    company = request.data.get('company')
+    location = request.data.get('location')
+
+    if not all([username, password, email, first_name, last_name, phone]):
+        print('all field required') # for deugging 
+        return Response(
+            {'error': 'Please provide all required fields'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if User.objects.filter(username=username).exists():
+        print('Username already Exist') # for debuging
+        return Response({'error': 'Username already exists'}, status=status.HTTP_400_BAD_REQUEST)
+    if User.objects.filter(email=email).exists():
+        print('email Aready exist') # for debugging
+        return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+    otp = f"{random.randint(100000, 999999)}"
+    hashed_password = make_password(password)
+
+    RegistrationOTP.objects.create(
+        username=username,
+        password=hashed_password,
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        phone=phone,
+        company=company or "",
+        location=location or "",
+        otp=otp
+    )
+    
+    subject = "Registration Confirmation"
+    context = {'otp': otp}
+    body = render_to_string('emails/registration_mail.html', context)
+    mail = EmailMessage(subject, body, from_email='no-reply@fasticket.com', reply_to=['support@fasticket.com'], to=[email])
+    mail.content_subtype = 'html'
+    mail.send()
+    
+    return Response(
+        {"message": "OTP sent to your email. Please verify to complete registration."},
+        status=status.HTTP_200_OK
+    )
+

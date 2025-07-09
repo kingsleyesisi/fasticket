@@ -82,7 +82,7 @@ class CreateEvent(APIView):
             if not event.is_paid and not event.tickets.exists():
                 Tickets.objects.create(
                     event=event,
-                    ticket_type="General Admission",
+                    ticket_type="Regular",
                     quantity=event.capacity,
                     price=0.00
                 )
@@ -287,7 +287,7 @@ class RegisterForFreeEvent(APIView):
                         # Create a default free ticket type if none exists
                         ticket_type = Tickets.objects.create(
                             event=event,
-                            ticket_type="General Admission",
+                            ticket_type="Regular",
                             quantity=event.capacity,
                             price=0.00
                         )
