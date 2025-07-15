@@ -200,15 +200,8 @@ class UpdateProfile(APIView):
     data = request.data
 
     try:
-        user_profile = UserProfile.objects.get(user=user)
+        user_profile, created = UserProfile.objects.get_or_create(user=user)
     except UserProfile.DoesNotExist:
-        # Create profile if it doesn't exist
-        user_profile = UserProfile.objects.create(
-            user=user,
-            phone=data.get('phone', ''),
-            company=data.get('company', ''),
-            location=data.get('location', '')
-        )
 
     # Update User model fields
     user_updated = False
