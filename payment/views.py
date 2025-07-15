@@ -182,28 +182,96 @@ class CallBack(APIView):
                     # The client might be redirected by Paystack here. 
                     # This JSON response is for API clients or if Paystack callback is handled server-side then redirected.
                     
-                    # Redirect to frontend with success parameters
+                    # Prepare comprehensive data for frontend
+                    success_data = {
+                        "status": "success",
+                        "message": "Payment verified and ticket created successfully",
+                        "payment": {
+                            "reference": payment_to_update.reference,
+                            "amount": float(payment_to_update.amount),
+                            "email": payment_to_update.email,
+                            "name": payment_to_update.name,
+                            "verified": payment_to_update.Verified,
+                            "payment_date": payment_to_update.paid_at.isoformat() if payment_to_update.paid_at else None
+                        },
+                        "ticket": {
+                            "id": purchased_ticket.id,
+                            "ticket_code": purchased_ticket.ticket_code,
+                            "status": purchased_ticket.status,
+                            "holder_name": purchased_ticket.holder_name,
+                            "holder_email": purchased_ticket.holder_email,
+                            "price": float(purchased_ticket.price),
+                            "created_at": purchased_ticket.created_at.isoformat()
+                        },
+                        "event": {
+                            "id": ticket_type.event.id,
+                            "title": ticket_type.event.title,
+                            "start_date": ticket_type.event.start_date.isoformat(),
+                            "start_time": ticket_type.event.start_time.strftime('%H:%M:%S'),
+                            "location": ticket_type.event.location,
+                            "banner": ticket_type.event.banner.url if ticket_type.event.banner else None
+                        },
+                        "ticket_type": {
+                            "id": ticket_type.id,
+                            "name": ticket_type.ticket_type,
+                            "price": float(ticket_type.price)
+                        }
+                    }
+                    
+                    # Redirect to frontend with JSON data as URL parameter
                     frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-                    redirect_url = f"{frontend_url}/payment/success?ticket_id={purchased_ticket.id}&ticket_code={purchased_ticket.ticket_code}&event_name={ticket_type.event.title}&amount={payment_to_update.amount}"
+                    
+                    # Convert data to JSON string and URL encode it
+                    import urllib.parse
+                    import json
+                    json_data = urllib.parse.quote(json.dumps(success_data))
+                    redirect_url = f"{frontend_url}/payment/success?data={json_data}"
                     
                     return HttpResponseRedirect(redirect_url)
 
             except IntegrityError as e: # Handles potential issues with F expression or other DB constraints
                 print(f"Database integrity error during payment callback for {trxref}: {e}")
+                error_data = {
+                    "status": "error",
+                    "message": "Database error occurred during payment processing",
+                    "error_type": "database_error",
+                    "reference": trxref
+                }
                 frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-                redirect_url = f"{frontend_url}/payment/error?message=Database error occurred"
+                import urllib.parse
+                import json
+                json_data = urllib.parse.quote(json.dumps(error_data))
+                redirect_url = f"{frontend_url}/payment/error?data={json_data}"
                 return HttpResponseRedirect(redirect_url)
             except Exception as e: # Catch any other unexpected errors
                 print(f"Unexpected error during payment callback for {trxref}: {e}")
                 # Do not mark payment as verified if ticket creation failed unexpectedly
+                error_data = {
+                    "status": "error",
+                    "message": "Unexpected error occurred during payment processing",
+                    "error_type": "unexpected_error",
+                    "reference": trxref
+                }
                 frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-                redirect_url = f"{frontend_url}/payment/error?message=Unexpected error occurred"
+                import urllib.parse
+                import json
+                json_data = urllib.parse.quote(json.dumps(error_data))
+                redirect_url = f"{frontend_url}/payment/error?data={json_data}"
                 return HttpResponseRedirect(redirect_url)
         else:
             # verification_status contains error dict from paystack.verify()
             reason = verification_status.get('data', 'Payment verification failed.') if isinstance(verification_status, dict) else 'Payment verification failed.'
+            error_data = {
+                "status": "error",
+                "message": reason,
+                "error_type": "verification_failed",
+                "reference": trxref
+            }
             frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
-            redirect_url = f"{frontend_url}/payment/error?message={reason}"
+            import urllib.parse
+            import json
+            json_data = urllib.parse.quote(json.dumps(error_data))
+            redirect_url = f"{frontend_url}/payment/error?data={json_data}"
             return HttpResponseRedirect(redirect_url)
 
     def _send_purchase_success_email(self, payment, ticket_type):
