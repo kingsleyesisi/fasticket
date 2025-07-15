@@ -54,10 +54,11 @@ __pycache__/
 *.spec
 
 # Ignore Django specific files
-*.sqlite3
-db.sqlite3
+# *.sqlite3
+# db.sqlite3
 
 # Ignore static and media files
 staticfiles/
 media/
 migrations/
+Profile/views.py
