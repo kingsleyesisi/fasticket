@@ -17,6 +17,7 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings # To get DEFAULT_FROM_EMAIL
 from django.utils import timezone
+from django.http import HttpResponseRedirect
 
 User = get_user_model()
 
@@ -180,24 +181,30 @@ class CallBack(APIView):
 
                     # The client might be redirected by Paystack here. 
                     # This JSON response is for API clients or if Paystack callback is handled server-side then redirected.
-                    return JsonResponse({
-                        "data": "success", 
-                        "message": "Payment verified and ticket created successfully.",
-                        "ticket_id": purchased_ticket.id,
-                        "ticket_code": purchased_ticket.ticket_code
-                    }, status=200)
+                    
+                    # Redirect to frontend with success parameters
+                    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+                    redirect_url = f"{frontend_url}/payment/success?ticket_id={purchased_ticket.id}&ticket_code={purchased_ticket.ticket_code}&event_name={ticket_type.event.title}&amount={payment_to_update.amount}"
+                    
+                    return HttpResponseRedirect(redirect_url)
 
             except IntegrityError as e: # Handles potential issues with F expression or other DB constraints
                 print(f"Database integrity error during payment callback for {trxref}: {e}")
-                return JsonResponse({'error': 'A database error occurred. Please contact support.'}, status=500)
+                frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+                redirect_url = f"{frontend_url}/payment/error?message=Database error occurred"
+                return HttpResponseRedirect(redirect_url)
             except Exception as e: # Catch any other unexpected errors
                 print(f"Unexpected error during payment callback for {trxref}: {e}")
                 # Do not mark payment as verified if ticket creation failed unexpectedly
-                return JsonResponse({'error': 'An unexpected error occurred while creating your ticket. Please contact support.'}, status=500)
+                frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+                redirect_url = f"{frontend_url}/payment/error?message=Unexpected error occurred"
+                return HttpResponseRedirect(redirect_url)
         else:
             # verification_status contains error dict from paystack.verify()
             reason = verification_status.get('data', 'Payment verification failed.') if isinstance(verification_status, dict) else 'Payment verification failed.'
-            return JsonResponse({'error': reason}, status=400)
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+            redirect_url = f"{frontend_url}/payment/error?message={reason}"
+            return HttpResponseRedirect(redirect_url)
 
     def _send_purchase_success_email(self, payment, ticket_type):
         """Send purchase success confirmation email."""

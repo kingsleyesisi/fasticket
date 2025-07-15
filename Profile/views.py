@@ -21,7 +21,52 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import serializers
 
-
+class GetUserInfo(APIView):
+    """
+    API view to get user information by user ID.
+    
+    Permissions: AllowAny (no authentication required)
+    
+    Allowed HTTP Methods:
+      - GET
+    
+    Path Parameters:
+      - user_id (int): The ID of the user to retrieve information for.
+    
+    Response:
+      - 200 OK: User information including profile data
+      - 404 Not Found: If user does not exist
+    """
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+            user_profile = UserProfile.objects.get(user=user)
+            
+            user_data = {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'date_joined': user.date_joined,
+                'profile': {
+                    'phone': user_profile.phone,
+                    'company': user_profile.company,
+                    'location': user_profile.location,
+                    'created_at': user_profile.created_at,
+                    'updated_at': user_profile.updated_at,
+                }
+            }
+            
+            return Response(user_data, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
 # Login View
 
@@ -136,23 +181,88 @@ class UpdateProfile(APIView):
     - PUT
 
   Request Body (PUT):
-    - Fields from UserProfileSerializer (e.g., company, phone, location). All fields are optional for partial updates.
+    - first_name (str, optional): User's first name
+    - last_name (str, optional): User's last name
+    - email (str, optional): User's email address
+    - phone (str, optional): User's phone number
+    - company (str, optional): User's company
+    - location (str, optional): User's location
 
   Response:
-    - 200 OK: UserProfileSerializer.data (updated profile data)
-    - 400 Bad Request: serializer.errors
+    - 200 OK: Updated user and profile data
+    - 400 Bad Request: Validation errors
   """
+  authentication_classes = [JWTAuthentication]
+  permission_classes = [IsAuthenticated]
+  
   def put(self, request, *args, **kwargs):
     user = request.user
     data = request.data
 
-    user_profile = UserProfile.objects.get(user=user)
-    serializer = UserProfileSerializer(user_profile, data=data, partial=True)
+    try:
+        user_profile = UserProfile.objects.get(user=user)
+    except UserProfile.DoesNotExist:
+        # Create profile if it doesn't exist
+        user_profile = UserProfile.objects.create(
+            user=user,
+            phone=data.get('phone', ''),
+            company=data.get('company', ''),
+            location=data.get('location', '')
+        )
 
-    if serializer.is_valid():
-      serializer.save()
-      return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # Update User model fields
+    user_updated = False
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+        user_updated = True
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+        user_updated = True
+    if 'email' in data:
+        # Check if email already exists for another user
+        if User.objects.filter(email=data['email']).exclude(id=user.id).exists():
+            return Response({'error': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        user.email = data['email']
+        user_updated = True
+    
+    if user_updated:
+        user.save()
+
+    # Update UserProfile fields
+    profile_updated = False
+    if 'phone' in data:
+        user_profile.phone = data['phone']
+        profile_updated = True
+    if 'company' in data:
+        user_profile.company = data['company']
+        profile_updated = True
+    if 'location' in data:
+        user_profile.location = data['location']
+        profile_updated = True
+    
+    if profile_updated:
+        user_profile.save()
+
+    # Return updated user data
+    response_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'profile': {
+            'phone': user_profile.phone,
+            'company': user_profile.company,
+            'location': user_profile.location,
+            'created_at': user_profile.created_at,
+            'updated_at': user_profile.updated_at,
+        }
+    }
+
+    return Response({
+        'message': 'Profile updated successfully',
+        'data': response_data
+    }, status=status.HTTP_200_OK)
 
 class ResetPassword(APIView):
     """
