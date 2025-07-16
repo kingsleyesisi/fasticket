@@ -438,6 +438,256 @@ class RegisterForFreeEvent(APIView):
             fail_silently=False
         )
 
+class EventAnalyticsView(APIView):
+    """
+    API view to get comprehensive analytics for event creators.
+    
+    Authentication: JWTAuthentication
+    Permissions: IsAuthenticated (Only event creator can view analytics)
+    
+    Allowed HTTP Methods:
+        - GET
+    
+    Path Parameters:
+        - event_id (str): The ID of the event to get analytics for.
+    
+    Response (GET):
+        - 200 OK: Comprehensive analytics data
+        - 403 Forbidden: If user is not the event creator
+        - 404 Not Found: If event doesn't exist
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, event_id):
+        try:
+            event = Event.objects.get(id=event_id)
+        except Event.DoesNotExist:
+            return Response({'error': 'Event not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if user is the event creator
+        if event.user != request.user:
+            return Response({
+                'error': 'You do not have permission to view analytics for this event.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get all ticket types for this event
+        ticket_types = event.tickets.all()
+        
+        # Get all purchased tickets for this event
+        from ticket_management.models import Ticket as PurchasedTicket
+        purchased_tickets = PurchasedTicket.objects.filter(
+            ticket_type__event=event
+        ).select_related('ticket_type', 'user')
+        
+        # Calculate analytics
+        analytics_data = self._calculate_analytics(event, ticket_types, purchased_tickets)
+        
+        return Response({
+            'status': 'success',
+            'data': analytics_data
+        }, status=status.HTTP_200_OK)
+    
+    def _calculate_analytics(self, event, ticket_types, purchased_tickets):
+        """Calculate comprehensive analytics for the event."""
+        from decimal import Decimal
+        from django.db.models import Sum, Count, Q
+        from collections import defaultdict
+        
+        # Basic event info
+        total_capacity = event.capacity
+        
+        # Ticket type analytics
+        ticket_analytics = []
+        total_sold = 0
+        total_revenue = Decimal('0.00')
+        total_available = 0
+        
+        for ticket_type in ticket_types:
+            sold_count = purchased_tickets.filter(
+                ticket_type=ticket_type,
+                status__in=['paid', 'transferred']
+            ).count()
+            
+            revenue = purchased_tickets.filter(
+                ticket_type=ticket_type,
+                status__in=['paid', 'transferred']
+            ).aggregate(total=Sum('price'))['total'] or Decimal('0.00')
+            
+            ticket_analytics.append({
+                'ticket_type_id': ticket_type.id,
+                'ticket_type_name': ticket_type.ticket_type,
+                'price': float(ticket_type.price),
+                'total_quantity': ticket_type.quantity,
+                'sold': sold_count,
+                'available': ticket_type.available,
+                'revenue': float(revenue),
+                'sold_percentage': round((sold_count / ticket_type.quantity) * 100, 2) if ticket_type.quantity > 0 else 0
+            })
+            
+            total_sold += sold_count
+            total_revenue += revenue
+            total_available += ticket_type.available
+        
+        # Attendee analytics
+        paid_attendees = purchased_tickets.filter(status__in=['paid', 'transferred'])
+        free_attendees = purchased_tickets.filter(status='paid', price=0)
+        checked_in_attendees = purchased_tickets.filter(checked_in=True)
+        
+        # Revenue breakdown
+        revenue_by_type = defaultdict(Decimal)
+        for ticket in paid_attendees:
+            revenue_by_type[ticket.ticket_type.ticket_type] += ticket.price
+        
+        # Registration timeline (last 30 days)
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+        
+        timeline_data = []
+        for i in range(30):
+            date = timezone.now().date() - timedelta(days=i)
+            daily_registrations = purchased_tickets.filter(
+                created_at__date=date,
+                status__in=['paid', 'transferred']
+            ).count()
+            timeline_data.append({
+                'date': date.isoformat(),
+                'registrations': daily_registrations
+            })
+        
+        timeline_data.reverse()  # Show oldest to newest
+        
+        # Attendee details
+        attendee_list = []
+        for ticket in paid_attendees.order_by('-created_at'):
+            attendee_list.append({
+                'ticket_id': ticket.id,
+                'ticket_code': ticket.ticket_code,
+                'holder_name': ticket.holder_name,
+                'holder_email': ticket.holder_email,
+                'ticket_type': ticket.ticket_type.ticket_type,
+                'price_paid': float(ticket.price),
+                'registration_date': ticket.created_at.isoformat(),
+                'checked_in': ticket.checked_in,
+                'check_in_time': ticket.check_in_time.isoformat() if ticket.check_in_time else None,
+                'status': ticket.status,
+                'is_free': ticket.price == 0
+            })
+        
+        # Summary statistics
+        return {
+            'event_info': {
+                'event_id': event.id,
+                'event_title': event.title,
+                'event_date': event.start_date.isoformat(),
+                'event_time': event.start_time.strftime('%H:%M:%S'),
+                'location': event.location,
+                'capacity': total_capacity,
+                'is_paid': event.is_paid,
+                'created_date': event.date_created.isoformat()
+            },
+            'summary': {
+                'total_tickets_sold': total_sold,
+                'total_tickets_available': total_available,
+                'total_revenue': float(total_revenue),
+                'total_attendees': paid_attendees.count(),
+                'free_attendees': free_attendees.count(),
+                'paid_attendees': paid_attendees.filter(price__gt=0).count(),
+                'checked_in_count': checked_in_attendees.count(),
+                'capacity_utilization': round((total_sold / total_capacity) * 100, 2) if total_capacity > 0 else 0,
+                'average_ticket_price': float(total_revenue / total_sold) if total_sold > 0 else 0
+            },
+            'ticket_types': ticket_analytics,
+            'revenue_breakdown': {
+                'total_revenue': float(total_revenue),
+                'by_ticket_type': {k: float(v) for k, v in revenue_by_type.items()}
+            },
+            'registration_timeline': timeline_data,
+            'attendees': attendee_list,
+            'status_breakdown': {
+                'paid': purchased_tickets.filter(status='paid').count(),
+                'transferred': purchased_tickets.filter(status='transferred').count(),
+                'cancelled': purchased_tickets.filter(status='cancelled').count(),
+                'refunded': purchased_tickets.filter(status='refunded').count(),
+                'pending': purchased_tickets.filter(status='pending').count()
+            }
+        }
+
+class EventListAnalyticsView(APIView):
+    """
+    API view to get analytics summary for all events created by the user.
+    
+    Authentication: JWTAuthentication
+    Permissions: IsAuthenticated
+    
+    Allowed HTTP Methods:
+        - GET
+    
+    Response (GET):
+        - 200 OK: List of events with basic analytics
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_events = Event.objects.filter(user=request.user).order_by('-date_created')
+        
+        events_analytics = []
+        total_revenue = Decimal('0.00')
+        total_attendees = 0
+        
+        for event in user_events:
+            from ticket_management.models import Ticket as PurchasedTicket
+            from django.db.models import Sum
+            
+            # Get purchased tickets for this event
+            event_tickets = PurchasedTicket.objects.filter(
+                ticket_type__event=event,
+                status__in=['paid', 'transferred']
+            )
+            
+            attendee_count = event_tickets.count()
+            event_revenue = event_tickets.aggregate(
+                total=Sum('price')
+            )['total'] or Decimal('0.00')
+            
+            # Calculate availability
+            total_available = sum(ticket_type.available for ticket_type in event.tickets.all())
+            total_capacity = sum(ticket_type.quantity for ticket_type in event.tickets.all())
+            
+            events_analytics.append({
+                'event_id': event.id,
+                'title': event.title,
+                'date': event.start_date.isoformat(),
+                'time': event.start_time.strftime('%H:%M:%S'),
+                'location': event.location,
+                'is_paid': event.is_paid,
+                'attendees': attendee_count,
+                'revenue': float(event_revenue),
+                'capacity': event.capacity,
+                'tickets_available': total_available,
+                'tickets_sold': total_capacity - total_available,
+                'capacity_utilization': round((attendee_count / event.capacity) * 100, 2) if event.capacity > 0 else 0,
+                'created_date': event.date_created.isoformat()
+            })
+            
+            total_revenue += event_revenue
+            total_attendees += attendee_count
+        
+        return Response({
+            'status': 'success',
+            'data': {
+                'summary': {
+                    'total_events': user_events.count(),
+                    'total_revenue': float(total_revenue),
+                    'total_attendees': total_attendees,
+                    'active_events': user_events.filter(start_date__gte=timezone.now().date()).count(),
+                    'past_events': user_events.filter(start_date__lt=timezone.now().date()).count()
+                },
+                'events': events_analytics
+            }
+        }, status=status.HTTP_200_OK)
+
 def CreateView(request):
     """
     Renders a simple HTML form for creating an event.

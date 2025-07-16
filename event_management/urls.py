@@ -9,5 +9,7 @@ urlpatterns = [
     path('getAll', views.GetEvent.as_view(), name='get_all'), # Get all events
     path('get/<str:pk>', views.GetParticularEvent.as_view(), name='get'),
     path('register-free', views.RegisterForFreeEvent.as_view(), name='register_free'),
+    path('analytics/<str:event_id>', views.EventAnalyticsView.as_view(), name='event_analytics'),
+    path('analytics', views.EventListAnalyticsView.as_view(), name='events_analytics'),
     path('view', views.CreateView, name='view'),
 ]

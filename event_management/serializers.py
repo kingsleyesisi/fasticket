@@ -3,10 +3,16 @@ from .models import Event, Tickets, Hosts #, TicketCategories
 from rest_framework import serializers
 
 class TicketSerializer(serializers.ModelSerializer):
+    sold_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Tickets
-        fields = ('id','ticket_type', 'price', 'quantity', 'available')
+        fields = ('id','ticket_type', 'price', 'quantity', 'available', 'sold_count')
         # fields = '__all__'
+    
+    def get_sold_count(self, obj):
+        """Calculate how many tickets of this type have been sold."""
+        return obj.quantity - obj.available
 
 class HostSerializer(serializers.ModelSerializer):
     class Meta:
