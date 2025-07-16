@@ -300,9 +300,19 @@ class RegisterForFreeEvent(APIView):
                     }, status=status.HTTP_400_BAD_REQUEST)
 
                 # Decrement available tickets
-                ticket_type.available = F('available') - 1
-                ticket_type.save(update_fields=['available'])
-                ticket_type.refresh_from_db()
+                # Real-time ticket availability update with atomic operation
+                updated_rows = Tickets.objects.filter(
+                    id=ticket_type.id,
+                    available__gt=0
+                ).update(available=F('available') - 1)
+                
+                if updated_rows == 0:
+                    # Another transaction already took the last ticket
+                    return Response({
+                        'error': 'This event is fully booked.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                ticket_type.refresh_from_db() # Get the updated available count
 
                 # Get user if authenticated
                 user = request.user if request.user.is_authenticated else None

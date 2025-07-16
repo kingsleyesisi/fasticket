@@ -145,9 +145,22 @@ class CallBack(APIView):
                         payment_to_update.save()
                         return JsonResponse({'error': 'Tickets are sold out. Your payment was successful but no ticket could be issued. Please contact support.', "data": "oversold"}, status=200) # 200 because payment is fine, but needs follow up
 
-                    ticket_type.available = F('available') - 1
-                    ticket_type.save(update_fields=['available'])
-                    ticket_type.refresh_from_db() # Get the new available
+                    # Real-time ticket availability update with atomic operation
+                    updated_rows = Tickets.objects.filter(
+                        id=ticket_type.id,
+                        available__gt=0
+                    ).update(available=F('available') - 1)
+                    
+                    if updated_rows == 0:
+                        # Another transaction already took the last ticket
+                        payment_to_update.Verified = True 
+                        payment_to_update.save()
+                        return JsonResponse({
+                            'error': 'Tickets sold out during processing. Your payment was successful but no ticket could be issued. Please contact support.',
+                            "data": "oversold"
+                        }, status=200)
+                    
+                    ticket_type.refresh_from_db() # Get the updated available count
 
                     # 4. Create PurchasedTicket
                     purchased_ticket = PurchasedTicket.objects.create(
